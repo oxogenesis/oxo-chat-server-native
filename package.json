@@ -1,0 +1,16 @@
+{
+  "name": "oxo-chat-server",
+  "version": "0.0.1",
+  "description": "oxo-chat-server",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf",
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^6.10.0",
+    "oxo-keypairs": "0.0.1",
+    "ws": "^6.2.1"
+  }
+}
