@@ -1,6 +1,6 @@
 # code
-**[client code](https://github.com/oxogenesis/oxo-chat-client)**  
-**[server code](https://github.com/oxogenesis/oxo-chat-server)**  
+**[client](https://github.com/oxogenesis/oxo-chat-client)**  
+**[server](https://github.com/oxogenesis/oxo-chat-server)**  
 
 # wiki
 **[1.关于密码学](https://github.com/oxogenesis/oxo-chat-client/wiki/1.%E5%85%B3%E4%BA%8E%E5%AF%86%E7%A0%81%E5%AD%A6)**  
