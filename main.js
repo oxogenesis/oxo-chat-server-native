@@ -181,7 +181,7 @@ function startClientServer() {
     ClientServer = new WebSocket.Server({
       port: 8888, //to bind on 80, must use 'sudo node main.js'
       clientTracking: true,
-      maxPayload: 1024
+      maxPayload: 10240
     });
 
     ClientServer.on('connection', function connection(ws) {

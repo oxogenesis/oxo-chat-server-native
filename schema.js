@@ -93,15 +93,15 @@ let BulletinRequestSchema = {
     }
 };
 
-let BulletinResponseSchema = {
+let ObjectResponseSchema = {
     "type": "object",
-    "required": ["Action", "Bulletin", "To", "Timestamp", "PublicKey", "Signature"],
+    "required": ["Action", "Object", "To", "Timestamp", "PublicKey", "Signature"],
     "maxProperties": 6,
     "properties": {
         "Action": {
             "type": "number"
         },
-        "Bulletin": {
+        "Object": {
             "type": "object"
         },
         "To": {
@@ -229,7 +229,7 @@ var ajv = new Ajv({ allErrors: true });
 //client
 var vDeclare = ajv.compile(DeclareSchema);
 var vBulletinRequestSchema = ajv.compile(BulletinRequestSchema);
-var vBulletinResponseSchema = ajv.compile(BulletinResponseSchema);
+var vObjectResponseSchema = ajv.compile(ObjectResponseSchema);
 var vChatMessageSchema = ajv.compile(ChatMessageSchema);
 var vChatSyncSchema = ajv.compile(ChatSyncSchema);
 var vDHPublicKeySchema = ajv.compile(DHPublicKeySchema);
@@ -238,7 +238,7 @@ function checkClientSchema(strJson) {
     if (typeof strJson == "string") {
         try {
             let json = JSON.parse(strJson);
-            if (vBulletinResponseSchema(json) || vBulletinRequestSchema(json) || vChatMessageSchema(json) || vChatSyncSchema(json) || vDHPublicKeySchema(json) || vDeclare(json)) {
+            if (vObjectResponseSchema(json) || vBulletinRequestSchema(json) || vChatMessageSchema(json) || vChatSyncSchema(json) || vDHPublicKeySchema(json) || vDeclare(json)) {
                 return json;
             } else {
                 return false;
