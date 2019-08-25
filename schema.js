@@ -276,10 +276,10 @@ let GroupManageSchema = {
     //dismiss:0
     //create:1
     //member approve:2   need Request
-    //remove member:3
+    //remove member:3    Request = {"Address":address}
     //member release:4   need Request
     "SubAction": {
-      "type": "string"
+      "type": "number"
     },
     "Request": {
       "type": "object"
@@ -435,18 +435,16 @@ var vObjectResponseSchema = ajv.compile(ObjectResponseSchema)
 var vChatMessageSchema = ajv.compile(ChatMessageSchema)
 var vChatSyncSchema = ajv.compile(ChatSyncSchema)
 var vChatDHSchema = ajv.compile(ChatDHSchema)
-var vGroupRequestSchema = ajv.compile(GroupRequestSchema)
-var vGroupManageSchema = ajv.compile(GroupManageSchema)
 var vGroupManageSyncSchema = ajv.compile(GroupManageSyncSchema)
 var vGroupDHSchema = ajv.compile(GroupDHSchema)
-var vGroupMessageSchema = ajv.compile(GroupMessageSchema)
 var vGroupMessageSyncSchema = ajv.compile(GroupMessageSyncSchema)
+var vGroupRequestSchema = ajv.compile(GroupRequestSchema)
 
 function checkClientSchema(strJson) {
   if (typeof strJson == "string") {
     try {
       let json = JSON.parse(strJson)
-      if (vObjectResponseSchema(json) || vBulletinRequestSchema(json) || vChatMessageSchema(json) || vChatSyncSchema(json) || vChatDHSchema(json) || vDeclare(json) || vGroupRequestSchema(json) || vGroupManageSchema(json) || vGroupManageSyncSchema(json) || vGroupDHSchema(json) || vGroupMessageSchema(json) || vGroupMessageSyncSchema(json)) {
+      if (vObjectResponseSchema(json) || vBulletinRequestSchema(json) || vChatMessageSchema(json) || vChatSyncSchema(json) || vChatDHSchema(json) || vDeclare(json) || vGroupRequestSchema(json) || vGroupManageSyncSchema(json) || vGroupDHSchema(json) || vGroupMessageSyncSchema(json)) {
         return json
       } else {
         return false
