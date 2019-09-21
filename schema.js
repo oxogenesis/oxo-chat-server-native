@@ -95,10 +95,13 @@ let BulletinRequestSchema = {
 
 let ObjectResponseSchema = {
   "type": "object",
-  "required": ["Action", "Object", "To", "Timestamp", "PublicKey", "Signature"],
-  "maxProperties": 6,
+  "required": ["Action", "ObjectType", "Object", "To", "Timestamp", "PublicKey", "Signature"],
+  "maxProperties": 7,
   "properties": {
     "Action": {
+      "type": "number"
+    },
+    "ObjectType": {
       "type": "number"
     },
     "Object": {
@@ -340,44 +343,6 @@ let GroupDHSchema = {
       "type": "string"
     },
     "Pair": {
-      "type": "string"
-    },
-    "To": {
-      "type": "string"
-    },
-    "Timestamp": {
-      "type": "number"
-    },
-    "PublicKey": {
-      "type": "string"
-    },
-    "Signature": {
-      "type": "string"
-    }
-  }
-}
-
-let GroupMessageSchema = {
-  "type": "object",
-  "required": ["Action", "GroupHash", "Sequence", "PreHash", "Confirm", "Content", "Timestamp", "PublicKey", "Signature"],
-  "maxProperties": 9,
-  "properties": {
-    "Action": {
-      "type": "number"
-    },
-    "GroupHash": {
-      "type": "string"
-    },
-    "Sequence": {
-      "type": "number"
-    },
-    "PreHash": {
-      "type": "string"
-    },
-    "Confirm": {
-      "type": "string"
-    },
-    "Content": {
       "type": "string"
     },
     "To": {
