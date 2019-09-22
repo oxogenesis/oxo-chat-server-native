@@ -362,8 +362,8 @@ let GroupDHSchema = {
 
 let GroupMessageSyncSchema = {
   "type": "object",
-  "required": ["Action", "GroupHash", "MessageHash", "To", "Timestamp", "PublicKey", "Signature"],
-  "maxProperties": 7,
+  "required": ["Action", "GroupHash", "Address", "CurrentSequence", "To", "Timestamp", "PublicKey", "Signature"],
+  "maxProperties": 8,
   "properties": {
     "Action": {
       "type": "number"
@@ -371,8 +371,11 @@ let GroupMessageSyncSchema = {
     "GroupHash": {
       "type": "string"
     },
-    "MessageHash": {
+    "Address": {
       "type": "string"
+    },
+    "CurrentSequence": {
+      "type": "number"
     },
     "To": {
       "type": "string"
