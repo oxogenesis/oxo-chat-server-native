@@ -1,62 +1,75 @@
 //keep alive
 process.on('uncaughtException', function(err) {
   //打印出错误
-  console.log(err);
+  console.log(err)
   //打印出错误的调用栈方便调试
-  console.log(err.stack);
-});
+  console.log(err.stack)
+})
 
 //json
-const Schema = require('./schema.js');
+const Schema = require('./schema.js')
 
 function cloneJson(json) {
-  return JSON.parse(JSON.stringify(json));
+  return JSON.parse(JSON.stringify(json))
 }
 
 function toSetUniq(arr) {
-  return Array.from(new Set(arr));
+  return Array.from(new Set(arr))
 }
 
 //ws
-const WebSocket = require('ws');
+const WebSocket = require('ws')
 
 //crypto
-const Crypto = require('crypto');
+const Crypto = require('crypto')
 
 function hasherSHA512(str) {
-  let sha512 = Crypto.createHash("sha512");
-  sha512.update(str);
-  return sha512.digest('hex');
+  let sha512 = Crypto.createHash("sha512")
+  sha512.update(str)
+  return sha512.digest('hex')
 }
 
 function halfSHA512(str) {
-  return hasherSHA512(str).toUpperCase().substr(0, 64);
+  return hasherSHA512(str).toUpperCase().substr(0, 64)
 }
 
 //oxo
-const oxoKeyPairs = require("oxo-keypairs");
+const oxoKeyPairs = require("oxo-keypairs")
 
 function strToHex(str) {
-  let arr = [];
-  let length = str.length;
+  let arr = []
+  let length = str.length
   for (let i = 0; i < length; i++) {
-    arr[i] = (str.charCodeAt(i).toString(16));
+    arr[i] = (str.charCodeAt(i).toString(16))
   }
-  return arr.join('').toUpperCase();
+  return arr.join('').toUpperCase()
 }
 
 function sign(msg, sk) {
-  let msgHexStr = strToHex(msg);
-  let sig = oxoKeyPairs.sign(msgHexStr, sk);
-  return sig;
+  let msgHexStr = strToHex(msg)
+  let sig = oxoKeyPairs.sign(msgHexStr, sk)
+  return sig
 }
 
 function verifySignature(msg, sig, pk) {
-  let hexStrMsg = strToHex(msg);
+  let hexStrMsg = strToHex(msg)
   try {
-    return oxoKeyPairs.verify(hexStrMsg, sig, pk);
+    return oxoKeyPairs.verify(hexStrMsg, sig, pk)
   } catch (e) {
-    return false;
+    return false
+  }
+}
+
+function VerifyJsonSignature(json) {
+  let sig = json["Signature"]
+  delete json["Signature"]
+  let tmpMsg = JSON.stringify(json)
+  if (verifySignature(tmpMsg, sig, json.PublicKey)) {
+    json["Signature"] = sig
+    return true
+  } else {
+    console.log('signature invalid...')
+    return false
   }
 }
 
@@ -68,7 +81,7 @@ var ActionCode = {
   TweetResponse: 203,
   DHPublicKey: 204,
   ChatMessage: 205
-};
+}
 
 //message
 var MessageCode = {
@@ -82,96 +95,100 @@ var MessageCode = {
   ToNotExist: 7, //To not exist...
 
   GatewayDeclareSuccess: 1000 //gateway declare success...
-};
+}
 
 function strServerMessage(msgCode) {
-  msgJson = { "Action": ActionCode.ServerMessage, "Code": msgCode };
-  return JSON.stringify(msgJson);
-};
+  msgJson = { "Action": ActionCode.ServerMessage, "Code": msgCode }
+  return JSON.stringify(msgJson)
+}
 
 function sendServerMessage(ws, msgCode) {
-  ws.send(strServerMessage(msgCode));
-};
+  ws.send(strServerMessage(msgCode))
+}
 
 //client connection
-let ClientConns = {};
+let ClientConns = {}
 
 function fetchClientConnAddress(ws) {
   for (let address in ClientConns) {
     if (ClientConns[address] == ws) {
-      return address;
+      return address
     }
   }
-  return null;
-};
+  return null
+}
 
-let ClientServer = null;
+let ClientServer = null
 
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 //client listener
 function teminateClientConn(ws) {
-  ws.close();
-  let connAddress = fetchClientConnAddress(ws);
+  ws.close()
+  let connAddress = fetchClientConnAddress(ws)
   if (connAddress != null) {
-    console.log(`###################LOG################### client disconnect... <${connAddress}>`);
-    delete ClientConns[connAddress];
+    console.log(`###################LOG################### client disconnect... <${connAddress}>`)
+    delete ClientConns[connAddress]
   }
 }
 
 function handleClientMessage(message, json) {
-  if (json["ActionCode"] == ActionCode.DHPublicKey) {
-  } else if (json["ActionCode"] == ActionCode.ChatMessage) {
-  } else if (json["ActionCode"] == ActionCode.TweetRequest) {
-  } else if (json["ActionCode"] == ActionCode.TweetResponse) {
-  } else if (json["ActionCode"] == ActionCode.TweetForward) {
-  }
-  if(ClientConns[json["To"]] != null){
-    ClientConns[json["To"]].send(message);
+  if(json["To"] != null && ClientConns[json["To"]] != null && ClientConns[json["To"]].readyState == WebSocket.OPEN){
+    ClientConns[json["To"]].send(message)
   }
 }
 
 function checkClientMessage(ws, message) {
-  console.log(`###################LOG################### Client Message:`);
-  console.log(`${message}`);
-  let json = Schema.checkClientSchema(message);
+  console.log(`###################LOG################### Client Message:`)
+  console.log(`${message}`)
+  let json = Schema.checkClientSchema(message)
   if (json == false) {
-    //========================================
-    sendServerMessage(ws, MessageCode.JsonSchemaInvalid);
-    teminateClientConn(ws);
+    //json格式不合法
+    sendServerMessage(ws, MessageCode.JsonSchemaInvalid)
+    teminateClientConn(ws)
   } else {
-    let sig = json["Signature"];
-    delete json["Signature"];
-    let tmpMsg = JSON.stringify(json);
-    if (verifySignature(tmpMsg, sig, json["PublicKey"])) {
-      let address = oxoKeyPairs.deriveAddress(json["PublicKey"]);
-      if (ClientConns[address] == ws) {
-        handleClientMessage(message, json);
+    let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
+    if (ClientConns[address] == ws) {
+      //连接已经通过"声明消息"校验过签名
+      handleClientMessage(message, json)
+    } else {
+      let connAddress = fetchClientConnAddress(ws)
+      if (connAddress != null && connAddress != address) {
+        //using different address in same connection
+        sendServerMessage(ws, MessageCode.AddressChanged)
+        teminateClientConn(ws)
       } else {
-        let connAddress = fetchClientConnAddress(ws);
+        if (!VerifyJsonSignature(json)) {
+          //"声明消息"签名不合法
+          sendServerMessage(ws, MessageCode.SignatureInvalid)
+          teminateClientConn(ws)
+          return
+        }
+
+        if (json.Timestamp + 60000 < Date.now()) {
+          //"声明消息"生成时间过早
+          sendServerMessage(ws, MessageCode.TimestampInvalid)
+          teminateClientConn(ws)
+          return
+        }
+        
         if (connAddress == null && ClientConns[address] == null) {
           //new connection and new address
-          ClientConns[address] = ws;
-          console.log(`connection established from client <${address}>`);
-          handleClientMessage(message, json);
+          //当前连接无对应地址，当前地址无对应连接，全新连接
+          console.log(`connection established from client <${address}>`)
+          ClientConns[address] = ws
+          //handleClientMessage(message, json)
         } else if (ClientConns[address] != ws && ClientConns[address].readyState == WebSocket.OPEN) {
           //new connection kick old conection with same address
-          sendServerMessage(ClientConns[address], MessageCode.NewConnectionOpening);
-          ClientConns[address].close();
-          ClientConns[address] = ws;
-          handleClientMessage(message, json);
-        } else if (connAddress != address) {
-          //using different address in same connection
-          sendServerMessage(ws, MessageCode.AddressChanged);
-          teminateClientConn(ws);
+          //当前地址有对应连接，断开旧连接，当前地址对应到当前连接
+          sendServerMessage(ClientConns[address], MessageCode.NewConnectionOpening)
+          ClientConns[address].close()
+          ClientConns[address] = ws
+          //handleClientMessage(message, json)
         } else {
-          ws.send("WTF...");
-          teminateClientConn(ws);
+          ws.send("WTF...")
+          teminateClientConn(ws)
         }
       }
-    } else {
-      //========================================
-      sendServerMessage(ws, MessageCode.SignatureInvalid);
-      teminateClientConn(ws);
     }
   }
 }
@@ -179,25 +196,25 @@ function checkClientMessage(ws, message) {
 function startClientServer() {
   if (ClientServer == null) {
     ClientServer = new WebSocket.Server({
-      port: 8888, //to bind on 80, must use 'sudo node main.js'
+      port: 3000, //to bind on 80, must use 'sudo node main.js'
       clientTracking: true,
       maxPayload: 10240
-    });
+    })
 
     ClientServer.on('connection', function connection(ws) {
       ws.on('message', function incoming(message) {
-        checkClientMessage(ws, message);
-      });
+        checkClientMessage(ws, message)
+      })
 
       ws.on('close', function close() {
-        let connAddress = fetchClientConnAddress(ws);
+        let connAddress = fetchClientConnAddress(ws)
         if (connAddress != null) {
-          console.log(`client <${connAddress}> disconnect...`);
-          delete ClientConns[connAddress];
+          console.log(`client <${connAddress}> disconnect...`)
+          delete ClientConns[connAddress]
         }
-      });
-    });
+      })
+    })
   }
 }
 
-startClientServer();
+startClientServer()
