@@ -108,6 +108,7 @@ function sendServerMessage(ws, msgCode) {
 
 //client connection
 let ClientConns = {}
+let accountList = 'obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf'
 
 function fetchClientConnAddress(ws) {
   for (let address in ClientConns) {
@@ -116,6 +117,14 @@ function fetchClientConnAddress(ws) {
     }
   }
   return null
+}
+
+function updateAccountList(argument) {
+  let accountArray = ['obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf']
+  for (let address in ClientConns) {
+    accountArray.push(address)
+  }
+  accountList = accountArray.join('<br>')
 }
 
 let ClientServer = null
@@ -139,7 +148,7 @@ function handleClientMessage(message, json) {
 
 function checkClientMessage(ws, message) {
   console.log(`###################LOG################### Client Message:`)
-  console.log(`${message}`)
+  //console.log(`${message}`)
   let json = Schema.checkClientSchema(message)
   if (json == false) {
     //json格式不合法
@@ -176,6 +185,7 @@ function checkClientMessage(ws, message) {
           //当前连接无对应地址，当前地址无对应连接，全新连接
           console.log(`connection established from client <${address}>`)
           ClientConns[address] = ws
+          updateAccountList()
           //handleClientMessage(message, json)
         } else if (ClientConns[address] != ws && ClientConns[address].readyState == WebSocket.OPEN) {
           //new connection kick old conection with same address
@@ -183,6 +193,7 @@ function checkClientMessage(ws, message) {
           sendServerMessage(ClientConns[address], MessageCode.NewConnectionOpening)
           ClientConns[address].close()
           ClientConns[address] = ws
+          updateAccountList()
           //handleClientMessage(message, json)
         } else {
           ws.send("WTF...")
@@ -218,3 +229,26 @@ function startClientServer() {
 }
 
 startClientServer()
+
+
+//start web server
+const http = require('http');
+
+http.createServer(function(request, response) {
+  response.writeHeader(200, {
+    "Content-Type" : "text/html"
+  });
+  response.write(`
+    <html>
+      <head>
+        <title>oxo.chat-server</title>
+      </head>
+      <body>
+        <h1>Online Account</h1>
+        ${accountList}
+      </body>
+    </html>
+    `);
+  response.end();
+})
+.listen(8000);
