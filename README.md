@@ -12,3 +12,95 @@
 $ npm install  
 $ node main.js  
 
+# deploy with ssl, nginx, pm2
+sudo apt install nginx  
+sudo ufw allow 'Nginx Full'  
+sudo ufw allow 22/tcp  
+sudo ufw enable  
+sudo ufw status  
+
+sudo add-apt-repository ppa:certbot/certbot  
+sudo apt update  
+sudo apt install python-certbot-nginx  
+
+sudo certbot --nginx -d oxo-chat-server.com -d ru.oxo-chat-server.com  
+Enter your email address  
+Enter “A” for Agree  
+Enter “Y” for Yes  
+Enter “2”  
+sudo certbot renew --dry-run  
+  
+sudo mv /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup  
+sudo nano /etc/nginx/sites-available/default  
+  
+```
+#https on 80 from localhost:8000
+server {  
+  listen 443 ssl;  
+  server_name oxo-chat-server.com;  
+  ssl_certificate /etc/letsencrypt/live/oxo-chat-server.com/fullchain.pem;  
+  ssl_certificate_key /etc/letsencrypt/live/oxo-chat-server.com/privkey.pem;  
+  ssl_protocols TLSv1.2;  
+  ssl_prefer_server_ciphers on;  
+  ssl_ciphers EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH;  
+  root /usr/share/nginx/html;  
+  index index.html index.htm;  
+  
+  server_name localhost;  
+  location / {
+    proxy_pass http://localhost:8000/;  
+    proxy_http_version 1.1;  
+    proxy_set_header Host $http_host;  
+    proxy_set_header X-Real-IP $remote_addr;  
+    proxy_set_header X-Forward-For $proxy_add_x_forwarded_for;  
+    proxy_set_header X-Forward-Proto http;  
+    proxy_set_header X-Nginx-Proxy true;  
+    proxy_redirect off;  
+  }
+}
+  
+server {  
+  listen 80;  
+  server_name oxo-chat-server.com;  
+  return 301 https://$host$request_uri;  
+}  
+  
+
+#wss on 80 from localhost:3000
+server {  
+  listen 443 ssl;  
+  server_name ru.oxo-chat-server.com;  
+  ssl_certificate /etc/letsencrypt/live/oxo-chat-server.com/fullchain.pem;  
+  ssl_certificate_key /etc/letsencrypt/live/oxo-chat-server.com/privkey.pem;  
+  ssl_protocols TLSv1.2;  
+  ssl_prefer_server_ciphers on;  
+  ssl_ciphers EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH;  
+  root /usr/share/nginx/html;  
+  index index.html index.htm;  
+  
+  server_name localhost;  
+  location / {
+    proxy_pass http://localhost:3000/;  
+    proxy_http_version 1.1;  
+    proxy_set_header Upgrade $http_upgrade;  
+    proxy_set_header Connection "upgrade";  
+    proxy_set_header Host $http_host;  
+    proxy_set_header X-Real-IP $remote_addr;  
+    proxy_connect_timeout 1d;  
+    proxy_send_timeout 1d;  
+    proxy_read_timeout 1d;  
+  }
+}
+  
+server {  
+  listen 80;  
+  server_name ru.oxo-chat-server.com;  
+  return 301 https://$host$request_uri;  
+}  
+```
+
+sudo nginx -t  
+sudo systemctl reload nginx  
+  
+sudo npm install -g pm2  
+pm2 start main.js  
