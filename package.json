@@ -11,6 +11,7 @@
   "dependencies": {
     "ajv": "^6.10.0",
     "oxo-keypairs": "0.0.1",
+    "sqlite3": "^4.0.6",
     "ws": "^6.2.1"
   }
 }
