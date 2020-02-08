@@ -93,6 +93,35 @@ let BulletinRequestSchema = {
   }
 }
 
+let BulletinFileRequestSchema = {
+  "type": "object",
+  "required": ["Action", "SHA1", "CurrentChunk", "To", "Timestamp", "PublicKey", "Signature"],
+  "maxProperties": 7,
+  "properties": {
+    "Action": {
+      "type": "number"
+    },
+    "SHA1": {
+      "type": "string"
+    },
+    "CurrentChunk": {
+      "type": "number"
+    },
+    "To": {
+      "type": "string"
+    },
+    "Timestamp": {
+      "type": "number"
+    },
+    "PublicKey": {
+      "type": "string"
+    },
+    "Signature": {
+      "type": "string"
+    }
+  }
+}
+
 let ObjectResponseSchema = {
   "type": "object",
   "required": ["Action", "ObjectType", "Object", "To", "Timestamp", "PublicKey", "Signature"],
@@ -398,11 +427,15 @@ var ajv = new Ajv({ allErrors: true })
 
 //client
 var vDeclare = ajv.compile(DeclareSchema)
-var vBulletinRequestSchema = ajv.compile(BulletinRequestSchema)
 var vObjectResponseSchema = ajv.compile(ObjectResponseSchema)
+
+var vBulletinRequestSchema = ajv.compile(BulletinRequestSchema)
+var vBulletinFileRequestSchema = ajv.compile(BulletinFileRequestSchema)
+
 var vChatMessageSchema = ajv.compile(ChatMessageSchema)
 var vChatSyncSchema = ajv.compile(ChatSyncSchema)
 var vChatDHSchema = ajv.compile(ChatDHSchema)
+
 var vGroupManageSyncSchema = ajv.compile(GroupManageSyncSchema)
 var vGroupDHSchema = ajv.compile(GroupDHSchema)
 var vGroupMessageSyncSchema = ajv.compile(GroupMessageSyncSchema)
@@ -412,7 +445,7 @@ function checkClientSchema(strJson) {
   if (typeof strJson == "string") {
     try {
       let json = JSON.parse(strJson)
-      if (vObjectResponseSchema(json) || vBulletinRequestSchema(json) || vChatMessageSchema(json) || vChatSyncSchema(json) || vChatDHSchema(json) || vDeclare(json) || vGroupRequestSchema(json) || vGroupManageSyncSchema(json) || vGroupDHSchema(json) || vGroupMessageSyncSchema(json)) {
+      if (vObjectResponseSchema(json) || vBulletinRequestSchema(json) || vBulletinFileRequestSchema(json) || vChatMessageSchema(json) || vChatSyncSchema(json) || vChatDHSchema(json) || vDeclare(json) || vGroupRequestSchema(json) || vGroupManageSyncSchema(json) || vGroupDHSchema(json) || vGroupMessageSyncSchema(json)) {
         return json
       } else {
         return false

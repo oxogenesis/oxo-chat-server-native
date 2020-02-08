@@ -79,20 +79,21 @@ function VerifyJsonSignature(json) {
 
 let ActionCode = {
     "ServerMessage": 0,
-    "Declare": 200,
-    "Bulletin": 201,
-    "BulletinRequest": 202,
-    "ObjectResponse": 203,
-    "ChatDH": 204,
-    "ChatMessage": 205,
-    "ChatSync": 206,
 
-    "GroupManage": 210,
-    "GroupRequest": 211,
-    "GroupManageSync": 212,
-    "GroupDH": 213,
-    "GroupMessage": 214,
-    "GroupMessageSync": 215
+    "Declare": 200,
+    "ObjectResponse": 201,
+
+    "BulletinRequest": 211,
+    "BulletinFileRequest": 212,
+
+    "ChatDH": 221,
+    "ChatMessage": 222,
+    "ChatSync": 223,
+
+    "GroupRequest": 231,
+    "GroupManageSync": 232,
+    "GroupDH": 233,
+    "GroupMessageSync": 234
 }
 
 //message
@@ -173,14 +174,14 @@ function initDB() {
     DB.serialize(() => {
         //为账号地址起名
         DB.run(`CREATE TABLE IF NOT EXISTS BULLETINS(
-        hash VARCHAR(32) PRIMARY KEY,
-        address VARCHAR(35) NOT NULL,
-        sequence INTEGER NOT NULL,
-        content TEXT NOT NULL,
-        quote TEXT NOT NULL,
-        signed_at INTEGER NOT NULL,
-        created_at INTEGER NOT NULL
-        )`, err => {
+    hash VARCHAR(32) PRIMARY KEY,
+    address VARCHAR(35) NOT NULL,
+    sequence INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    quote TEXT NOT NULL,
+    signed_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+    )`, err => {
             if (err) {
                 console.log(err)
             }
@@ -219,7 +220,7 @@ function handleClientMessage(message, json) {
             let address = oxoKeyPairs.deriveAddress(bulletin.PublicKey)
             //console.log(hash)
             let SQL = `INSERT INTO BULLETINS (hash, address, sequence, content, signed_at, created_at, quote)
-                VALUES ('${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', ${bulletin.Timestamp}, ${timestamp}, '${JSON.stringify(bulletin.Quote)}')`
+        VALUES ('${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', ${bulletin.Timestamp}, ${timestamp}, '${JSON.stringify(bulletin.Quote)}')`
             DB.run(SQL, err => {
                 if (err) {
                     console.log(err)
@@ -245,6 +246,7 @@ function checkClientMessage(ws, message) {
     if (json == false) {
         //json格式不合法
         sendServerMessage(ws, MessageCode["JsonSchemaInvalid"])
+        //console.log(`${message}`)
         teminateClientConn(ws)
     } else {
         let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
@@ -350,39 +352,39 @@ http.createServer(function(request, response) {
                 "Content-Type": "text/html"
             });
             response.write(`
-            <!DOCTYPE html>
-            <html>
-                <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-                <head>
-                    <title>oxo-chat-server</title>
-                </head>
-                <body>
-                    <h1><a href="https://github.com/oxogenesis/oxo-chat-client">客户端源码</a></h1>
-                    <h1><a href="https://github.com/oxogenesis/oxo-chat-server">服务端源码</a></h1>
-                    <h2><a href="/accounts">在线账号</a></h2>
-                    <h2><a href="/bulletins">缓存的公告</a></h2>
-                </body>
-            </html>
-            `);
+      <!DOCTYPE html>
+      <html>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <head>
+          <title>oxo-chat-server</title>
+        </head>
+        <body>
+          <h1><a href="https://github.com/oxogenesis/oxo-chat-client">客户端源码</a></h1>
+          <h1><a href="https://github.com/oxogenesis/oxo-chat-server">服务端源码</a></h1>
+          <h2><a href="/accounts">在线账号</a></h2>
+          <h2><a href="/bulletins">缓存的公告</a></h2>
+        </body>
+      </html>
+      `);
             response.end();
         } else if (path == "/accounts") {
             response.writeHeader(200, {
                 "Content-Type": "text/html"
             });
             response.write(`
-            <!DOCTYPE html>
-            <html>
-                <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-                <head>
-                    <title>oxo-chat-server</title>
-                </head>
-                <body>
-                    <h1>在线账号</h1>
-                    <h1><a href="/bulletins">缓存的公告</a></h1>
-                    ${accountList}
-                </body>
-            </html>
-            `);
+      <!DOCTYPE html>
+      <html>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <head>
+          <title>oxo-chat-server</title>
+        </head>
+        <body>
+          <h1>在线账号</h1>
+          <h1><a href="/bulletins">缓存的公告</a></h1>
+          ${accountList}
+        </body>
+      </html>
+      `);
             response.end();
         } else if (path == "/bulletins" || bulletins_reg.test(path)) {
             let page = 1
@@ -402,22 +404,22 @@ http.createServer(function(request, response) {
                         "Content-Type": "text/html"
                     });
                     response.write(`
-                    <!DOCTYPE html>
-                    <html>
-                        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-                        <head>
-                            <title>oxo-chat-server</title>
-                        </head>
-                        <body>
-                            <h1><a href="/accounts">在线账号</a></h1>
-                            <h1>缓存的公告</h1>
-                            <ul>
-                            ${lis}
-                            </ul>
-                            ${PageLinks}
-                        </body>
-                    </html>
-                    `);
+          <!DOCTYPE html>
+          <html>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+            <head>
+              <title>oxo-chat-server</title>
+            </head>
+            <body>
+              <h1><a href="/accounts">在线账号</a></h1>
+              <h1>缓存的公告</h1>
+              <ul>
+              ${lis}
+              </ul>
+              ${PageLinks}
+            </body>
+          </html>
+          `);
                     response.end();
                 }
             })
@@ -433,20 +435,20 @@ http.createServer(function(request, response) {
                             "Content-Type": "text/html"
                         });
                         response.write(`
-                        <!DOCTYPE html>
-                        <html>
-                            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-                            <head>
-                                <title>oxo-chat-server</title>
-                            </head>
-                            <body>
-                                <h1><a href="/accounts">在线账号</a></h1>
-                                <h1><a href="/bulletins">缓存的公告</a></h1>
-                                <h1>Bulletin#${hash}</h1>
-                                <h1>未被缓存...</h1>
-                            </body>
-                        </html>
-                        `)
+            <!DOCTYPE html>
+            <html>
+              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+              <head>
+                <title>oxo-chat-server</title>
+              </head>
+              <body>
+                <h1><a href="/accounts">在线账号</a></h1>
+                <h1><a href="/bulletins">缓存的公告</a></h1>
+                <h1>Bulletin#${hash}</h1>
+                <h1>未被缓存...</h1>
+              </body>
+            </html>
+            `)
                         response.end();
                     } else {
                         let quote = ''
@@ -462,24 +464,24 @@ http.createServer(function(request, response) {
                             "Content-Type": "text/html"
                         });
                         response.write(`
-                        <!DOCTYPE html>
-                        <html>
-                            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-                            <head>
-                                <title>oxo-chat-server</title>
-                            </head>
-                            <body>
-                                <h1><a href="/accounts">在线账号</a></h1>
-                                <h1><a href="/bulletins">缓存的公告</a></h1>
-                                <h1>Bulletin#${hash}</h1>
-                                <h3>${item.address}#${item.sequence}</h3>
-                                <h3> 发布于${timestamp_format(item.signed_at)}</h3>
-                                <hr>
-                                ${quote}
-                                <h3>${item.content}</h3>
-                            </body>
-                        </html>
-                        `);
+            <!DOCTYPE html>
+            <html>
+              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+              <head>
+                <title>oxo-chat-server</title>
+              </head>
+              <body>
+                <h1><a href="/accounts">在线账号</a></h1>
+                <h1><a href="/bulletins">缓存的公告</a></h1>
+                <h1>Bulletin#${hash}</h1>
+                <h3>${item.address}#${item.sequence}</h3>
+                <h3> 发布于${timestamp_format(item.signed_at)}</h3>
+                <hr>
+                ${quote}
+                <h3>${item.content}</h3>
+              </body>
+            </html>
+            `);
                         response.end();
                     }
                 }
