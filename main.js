@@ -174,14 +174,13 @@ function initDB() {
     DB.serialize(() => {
         //为账号地址起名
         DB.run(`CREATE TABLE IF NOT EXISTS BULLETINS(
-    hash VARCHAR(32) PRIMARY KEY,
-    address VARCHAR(35) NOT NULL,
-    sequence INTEGER NOT NULL,
-    content TEXT NOT NULL,
-    quote TEXT NOT NULL,
-    signed_at INTEGER NOT NULL,
-    created_at INTEGER NOT NULL
-    )`, err => {
+            hash VARCHAR(32) PRIMARY KEY,
+            address VARCHAR(35) NOT NULL,
+            sequence INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            quote TEXT NOT NULL,
+            signed_at INTEGER NOT NULL,
+            created_at INTEGER NOT NULL)`, err => {
             if (err) {
                 console.log(err)
             }
@@ -303,7 +302,7 @@ function startClientServer() {
         ClientServer = new WebSocket.Server({
             port: 3000, //to bind on 80, must use 'sudo node main.js'
             clientTracking: true,
-            maxPayload: 1024000
+            maxPayload: 102400
         })
 
         ClientServer.on('connection', function connection(ws) {

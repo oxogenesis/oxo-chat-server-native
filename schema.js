@@ -20,36 +20,18 @@ let DeclareSchema = {
   }
 }
 
-//>>>bulletin<<<
-let BulletinSchema = {
+let ObjectResponseSchema = {
   "type": "object",
-  "required": ["Action", "Sequence", "PreHash", "Quote", "Content", "Timestamp", "PublicKey", "Signature"],
-  "maxProperties": 8,
+  "required": ["Action", "Object", "To", "Timestamp", "PublicKey", "Signature"],
+  "maxProperties": 6,
   "properties": {
     "Action": {
       "type": "number"
     },
-    "Sequence": {
-      "type": "number"
+    "Object": {
+      "type": "object"
     },
-    "PreHash": {
-      "type": "string"
-    },
-    "Quote": {
-      "type": "array",
-      "minItems": 0,
-      "maxItems": 8,
-      "items": {
-        "type": "object",
-        "required": ["Address", "Sequence", "Hash"],
-        "properties": {
-          "Address": { "type": "string" },
-          "Sequence": { "type": "number" },
-          "Hash": { "type": "string" }
-        }
-      }
-    },
-    "Content": {
+    "To": {
       "type": "string"
     },
     "Timestamp": {
@@ -64,6 +46,7 @@ let BulletinSchema = {
   }
 }
 
+//>>>bulletin<<<
 let BulletinRequestSchema = {
   "type": "object",
   "required": ["Action", "Address", "Sequence", "To", "Timestamp", "PublicKey", "Signature"],
@@ -106,35 +89,6 @@ let BulletinFileRequestSchema = {
     },
     "CurrentChunk": {
       "type": "number"
-    },
-    "To": {
-      "type": "string"
-    },
-    "Timestamp": {
-      "type": "number"
-    },
-    "PublicKey": {
-      "type": "string"
-    },
-    "Signature": {
-      "type": "string"
-    }
-  }
-}
-
-let ObjectResponseSchema = {
-  "type": "object",
-  "required": ["Action", "ObjectType", "Object", "To", "Timestamp", "PublicKey", "Signature"],
-  "maxProperties": 7,
-  "properties": {
-    "Action": {
-      "type": "number"
-    },
-    "ObjectType": {
-      "type": "number"
-    },
-    "Object": {
-      "type": "object"
     },
     "To": {
       "type": "string"
@@ -258,7 +212,7 @@ let ChatDHSchema = {
 //group request
 let GroupRequestSchema = {
   "type": "object",
-  "required": ["Action", "GroupHash", "SubAction", "To", "Timestamp", "PublicKey", "Signature"],
+  "required": ["Action", "GroupHash", "GroupManageAction", "To", "Timestamp", "PublicKey", "Signature"],
   "maxProperties": 7,
   "properties": {
     "Action": {
@@ -269,52 +223,11 @@ let GroupRequestSchema = {
     },
     //leave:0
     //join:1
-    "SubAction": {
+    "GroupManageAction": {
       "type": "number"
     },
     "To": {
       "type": "string"
-    },
-    "Timestamp": {
-      "type": "number"
-    },
-    "PublicKey": {
-      "type": "string"
-    },
-    "Signature": {
-      "type": "string"
-    }
-  }
-}
-
-//group control for group admin
-let GroupManageSchema = {
-  "type": "object",
-  "required": ["Action", "GroupHash", "Sequence", "PreHash", "SubAction", "Timestamp", "PublicKey", "Signature"],
-  "maxProperties": 9,
-  "properties": {
-    "Action": {
-      "type": "number"
-    },
-    "GroupHash": {
-      "type": "string"
-    },
-    "Sequence": {
-      "type": "number"
-    },
-    "PreHash": {
-      "type": "string"
-    },
-    //dismiss:0
-    //create:1
-    //member approve:2   need Request
-    //remove member:3    Request = {"Address":address}
-    //member release:4   need Request
-    "SubAction": {
-      "type": "number"
-    },
-    "Request": {
-      "type": "object"
     },
     "Timestamp": {
       "type": "number"
