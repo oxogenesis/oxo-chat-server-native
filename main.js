@@ -111,9 +111,11 @@ const MessageCode = {
 }
 
 const ObjectType = {
-    "Bulletin": 201,
-    "GroupManage": 202,
-    "GroupMessage": 203
+    "Bulletin": 111,
+    "BulletinFile": 112,
+
+    "GroupManage": 131,
+    "GroupMessage": 132
 }
 
 function strServerMessage(msgCode) {
@@ -210,7 +212,7 @@ function handleClientMessage(message, json) {
     if (json["To"] != null && ClientConns[json["To"]] != null && ClientConns[json["To"]].readyState == WebSocket.OPEN) {
         ClientConns[json["To"]].send(message)
         //cache bulletin
-        if (json["Action"] == ActionCode["ObjectResponse"] && json["ObjectType"] == ObjectType["Bulletin"]) {
+        if (json["Action"] == ActionCode["ObjectResponse"] && json["Object"]["ObjectType"] == ObjectType["Bulletin"]) {
             //console.log(`###################LOG################### Client Message:`)
             //console.log(message)
             let timestamp = Date.now()
