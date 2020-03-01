@@ -78,22 +78,22 @@ function VerifyJsonSignature(json) {
 }
 
 let ActionCode = {
-    "ServerMessage": 0,
+    "Declare": 100,
+    "ObjectResponse": 101,
 
-    "Declare": 200,
-    "ObjectResponse": 201,
+    "BulletinRequest": 201,
+    "BulletinFileRequest": 202,
 
-    "BulletinRequest": 211,
-    "BulletinFileRequest": 212,
+    "ChatDH": 301,
+    "ChatMessage": 302,
+    "ChatSync": 303,
+    "PrivateFileRequest": 304,
 
-    "ChatDH": 221,
-    "ChatMessage": 222,
-    "ChatSync": 223,
-
-    "GroupRequest": 231,
-    "GroupManageSync": 232,
-    "GroupDH": 233,
-    "GroupMessageSync": 234
+    "GroupRequest": 401,
+    "GroupManageSync": 402,
+    "GroupDH": 403,
+    "GroupMessageSync": 404,
+    "GroupFileRequest": 405
 }
 
 //message
@@ -111,11 +111,14 @@ const MessageCode = {
 }
 
 const ObjectType = {
-    "Bulletin": 111,
-    "BulletinFile": 112,
+    "Bulletin": 101,
+    "BulletinFile": 102,
 
-    "GroupManage": 131,
-    "GroupMessage": 132
+    "PrivateFile": 201,
+
+    "GroupManage": 301,
+    "GroupMessage": 302,
+    "GroupFile": 303
 }
 
 function strServerMessage(msgCode) {
@@ -304,7 +307,7 @@ function startClientServer() {
         ClientServer = new WebSocket.Server({
             port: 3000, //to bind on 80, must use 'sudo node main.js'
             clientTracking: true,
-            maxPayload: 102400
+            maxPayload: 150 * 1024
         })
 
         ClientServer.on('connection', function connection(ws) {
