@@ -184,6 +184,7 @@ function initDB() {
             sequence INTEGER NOT NULL,
             content TEXT NOT NULL,
             quote TEXT NOT NULL,
+            json TEXT NOT NULL,
             signed_at INTEGER NOT NULL,
             created_at INTEGER NOT NULL)`, err => {
             if (err) {
@@ -200,10 +201,12 @@ function initDB() {
             BulletinCount = items.length
             PageCount = BulletinCount / PageSize + 1
             PageLinks = ''
+            let PageLinkArray = []
             if (PageCount > 1) {
                 for (let i = 1; i <= PageCount; i++) {
-                    PageLinks = PageLinks + `<a href="/bulletins?page=${i}">${i}</a> `
+                    PageLinkArray.push(`<a href="/bulletins?page=${i}">${i}</a>`)
                 }
+                PageLinks = PageLinkArray.join(' ')
             }
         }
     })
@@ -213,7 +216,9 @@ initDB()
 
 function handleClientMessage(message, json) {
     if (json["To"] != null && ClientConns[json["To"]] != null && ClientConns[json["To"]].readyState == WebSocket.OPEN) {
+        //forward message
         ClientConns[json["To"]].send(message)
+
         //cache bulletin
         if (json["Action"] == ActionCode["ObjectResponse"] && json["Object"]["ObjectType"] == ObjectType["Bulletin"]) {
             //console.log(`###################LOG################### Client Message:`)
@@ -223,8 +228,8 @@ function handleClientMessage(message, json) {
             let hash = quarterSHA512(JSON.stringify(bulletin))
             let address = oxoKeyPairs.deriveAddress(bulletin.PublicKey)
             //console.log(hash)
-            let SQL = `INSERT INTO BULLETINS (hash, address, sequence, content, signed_at, created_at, quote)
-        VALUES ('${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', ${bulletin.Timestamp}, ${timestamp}, '${JSON.stringify(bulletin.Quote)}')`
+            let SQL = `INSERT INTO BULLETINS (hash, address, sequence, content, quote, json, signed_at, created_at)
+        VALUES ('${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', '${JSON.stringify(bulletin.Quote)}', '${JSON.stringify(bulletin)}', ${bulletin.Timestamp}, ${timestamp})`
             DB.run(SQL, err => {
                 if (err) {
                     console.log(err)
@@ -232,14 +237,30 @@ function handleClientMessage(message, json) {
                     BulletinCount = BulletinCount + 1
                     PageCount = BulletinCount / PageSize + 1
                     PageLinks = ''
+                    let PageLinkArray = []
                     if (PageCount > 1) {
                         for (let i = 1; i <= PageCount; i++) {
-                            PageLinks = PageLinks + `<a href="/bulletins?page=${i}">${i}</a>`
+                            PageLinkArray.push(`<a href="/bulletins?page=${i}">${i}</a>`)
                         }
+                        PageLinks = PageLinkArray.join(' ')
                     }
                 }
             })
         }
+    } else if (json["Action"] == ActionCode["BulletinRequest"]) {
+        //send cache bulletin
+        let SQL = `SELECT * FROM BULLETINS WHERE address = "${json["Address"]}" AND sequence = "${json["Sequence"]}"`
+        DB.get(SQL, (err, item) => {
+            if (err) {
+                console.log(err)
+            } else {
+                if (item != null) {
+                	console.log(json)
+                    let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
+                    ClientConns[address].send(item.json)
+                }
+            }
+        })
     }
 }
 
@@ -362,7 +383,7 @@ http.createServer(function(request, response) {
         <head>
           <title>oxo-chat-server</title>
         </head>
-        <body>
+        <body bgcolor="#8FBC8F">
           <h1><a href="https://github.com/oxogenesis/oxo-chat-client">客户端源码</a></h1>
           <h1><a href="https://github.com/oxogenesis/oxo-chat-server">服务端源码</a></h1>
           <h2><a href="/accounts">在线账号</a></h2>
@@ -382,7 +403,7 @@ http.createServer(function(request, response) {
         <head>
           <title>oxo-chat-server</title>
         </head>
-        <body>
+        <body bgcolor="#8FBC8F">
           <h1>在线账号</h1>
           <h1><a href="/bulletins">缓存的公告</a></h1>
           ${accountList}
@@ -414,7 +435,7 @@ http.createServer(function(request, response) {
             <head>
               <title>oxo-chat-server</title>
             </head>
-            <body>
+            <body bgcolor="#8FBC8F">
               <h1><a href="/accounts">在线账号</a></h1>
               <h1>缓存的公告</h1>
               <ul>
@@ -445,7 +466,7 @@ http.createServer(function(request, response) {
               <head>
                 <title>oxo-chat-server</title>
               </head>
-              <body>
+              <body bgcolor="#8FBC8F">
                 <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
@@ -474,7 +495,7 @@ http.createServer(function(request, response) {
               <head>
                 <title>oxo-chat-server</title>
               </head>
-              <body>
+              <body bgcolor="#8FBC8F">
                 <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
