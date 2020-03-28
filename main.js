@@ -255,7 +255,6 @@ function handleClientMessage(message, json) {
                 console.log(err)
             } else {
                 if (item != null) {
-                	console.log(json)
                     let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
                     ClientConns[address].send(item.json)
                 }
