@@ -354,7 +354,8 @@ const http = require('http')
 const url = require("url")
 
 const bulletins_reg = /^\/bulletins\?page=\d+/
-const bulletin_reg = /^\/bulletin\/[0123456789ABCDEF]{32}/
+const bulletin_reg = /^\/bulletin\/[0123456789ABCDEF]{32}$/
+const bulletin_json_reg = /^\/bulletin\/[0123456789ABCDEF]{32}\/json$/
 
 function add0(m) { return m < 10 ? '0' + m : m }
 
@@ -498,7 +499,8 @@ http.createServer(function(request, response) {
                 <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
-                <h3>${item.address}#${item.sequence}</h3>
+                <h3>${item.address}
+                <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
                 <h3> 发布于${timestamp_format(item.signed_at)}</h3>
                 <hr>
                 ${quote}
@@ -510,12 +512,48 @@ http.createServer(function(request, response) {
                     }
                 }
             })
+        } else if (bulletin_json_reg.test(path)) {
+            let hash = path.replace(/^\/bulletin\//, '')
+            hash = hash.replace(/\/json/, '')
+            let SQL = `SELECT * FROM BULLETINS WHERE hash = "${hash}"`
+            DB.get(SQL, (err, item) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    if (item == null) {
+                        response.writeHeader(200, {
+                            "Content-Type": "text/html"
+                        });
+                        response.write(`
+            <!DOCTYPE html>
+            <html>
+              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+              <head>
+                <title>oxo-chat-server</title>
+              </head>
+              <body bgcolor="#8FBC8F">
+                <h1><a href="/accounts">在线账号</a></h1>
+                <h1><a href="/bulletins">缓存的公告</a></h1>
+                <h1>Bulletin#${hash}</h1>
+                <h1>未被缓存...</h1>
+              </body>
+            </html>
+            `)
+                        response.end();
+                    } else {
+                        response.writeHeader(200, {
+                            "Content-Type": "application/json; charset=utf-8"
+                        });
+                        response.write(`${item.json}`);
+                        response.end();
+                    }
+                }
+            })
         } else {
             response.writeHeader(404, {
                 "Content-Type": "text/html"
             });
             response.end();
         }
-
     })
     .listen(8000);
