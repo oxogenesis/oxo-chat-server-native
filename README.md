@@ -1,5 +1,12 @@
+# oxo-chat-server
+消息服务器
+* 消息转发功能
+* 公告缓存功能
+* 简单的网站功能（在线账户列表、公告展示）
+
 # code
 **[client](https://github.com/oxogenesis/oxo-chat-client)**  
+**[router](https://github.com/oxogenesis/oxo-chat-router)**  
 **[server](https://github.com/oxogenesis/oxo-chat-server)**  
 
 # wiki
