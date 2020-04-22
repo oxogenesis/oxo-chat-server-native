@@ -214,6 +214,62 @@ function initDB() {
 
 initDB()
 
+////////hard copy from client<<<<<<<<
+const crypto = require("crypto")
+
+const Seed = "xrUC4rWbXPizJVmusxb31LcexnkT2"
+const keypair = oxoKeyPairs.deriveKeypair(Seed)
+const Address = oxoKeyPairs.deriveAddress(keypair.publicKey)
+const PublicKey = keypair.publicKey
+const PrivateKey = keypair.privateKey
+
+function sign(msg, sk) {
+    let msgHexStr = strToHex(msg);
+    let sig = oxoKeyPairs.sign(msgHexStr, sk);
+    return sig;
+}
+
+function GenBulletinRequest(address, sequence, to) {
+    let json = {
+        "Action": ActionCode["BulletinRequest"],
+        "Address": address,
+        "Sequence": sequence,
+        "To": to,
+        "Timestamp": Date.now(),
+        "PublicKey": PublicKey
+    }
+    let sig = sign(JSON.stringify(json), PrivateKey)
+    json.Signature = sig
+    let strJson = JSON.stringify(json)
+    return strJson
+}
+////////hard copy from client>>>>>>>>
+
+function CacheBulletin(bulletin) {
+    let timestamp = Date.now()
+    let hash = quarterSHA512(JSON.stringify(bulletin))
+    let address = oxoKeyPairs.deriveAddress(bulletin.PublicKey)
+    //console.log(hash)
+    let SQL = `INSERT INTO BULLETINS (hash, address, sequence, content, quote, json, signed_at, created_at)
+                VALUES ('${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', '${JSON.stringify(bulletin.Quote)}', '${JSON.stringify(bulletin)}', ${bulletin.Timestamp}, ${timestamp})`
+    DB.run(SQL, err => {
+        if (err) {
+            console.log(err)
+        } else {
+            BulletinCount = BulletinCount + 1
+            PageCount = BulletinCount / PageSize + 1
+            PageLinks = ''
+            let PageLinkArray = []
+            if (PageCount > 1) {
+                for (let i = 1; i <= PageCount; i++) {
+                    PageLinkArray.push(`<a href="/bulletins?page=${i}">${i}</a>`)
+                }
+                PageLinks = PageLinkArray.join(' ')
+            }
+        }
+    })
+}
+
 function handleClientMessage(message, json) {
     if (json["To"] != null && ClientConns[json["To"]] != null && ClientConns[json["To"]].readyState == WebSocket.OPEN) {
         //forward message
@@ -223,29 +279,7 @@ function handleClientMessage(message, json) {
         if (json["Action"] == ActionCode["ObjectResponse"] && json["Object"]["ObjectType"] == ObjectType["Bulletin"]) {
             //console.log(`###################LOG################### Client Message:`)
             //console.log(message)
-            let timestamp = Date.now()
-            let bulletin = json["Object"]
-            let hash = quarterSHA512(JSON.stringify(bulletin))
-            let address = oxoKeyPairs.deriveAddress(bulletin.PublicKey)
-            //console.log(hash)
-            let SQL = `INSERT INTO BULLETINS (hash, address, sequence, content, quote, json, signed_at, created_at)
-        VALUES ('${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', '${JSON.stringify(bulletin.Quote)}', '${JSON.stringify(bulletin)}', ${bulletin.Timestamp}, ${timestamp})`
-            DB.run(SQL, err => {
-                if (err) {
-                    console.log(err)
-                } else {
-                    BulletinCount = BulletinCount + 1
-                    PageCount = BulletinCount / PageSize + 1
-                    PageLinks = ''
-                    let PageLinkArray = []
-                    if (PageCount > 1) {
-                        for (let i = 1; i <= PageCount; i++) {
-                            PageLinkArray.push(`<a href="/bulletins?page=${i}">${i}</a>`)
-                        }
-                        PageLinks = PageLinkArray.join(' ')
-                    }
-                }
-            })
+            CacheBulletin(json["Object"])
         }
     } else if (json["Action"] == ActionCode["BulletinRequest"]) {
         //send cache bulletin
@@ -260,6 +294,14 @@ function handleClientMessage(message, json) {
                 }
             }
         })
+    } else if (json["To"] == Address && json["Action"] == ActionCode["ObjectResponse"] && json["Object"]["ObjectType"] == ObjectType["Bulletin"]) {
+        CacheBulletin(json["Object"])
+        //fetch more bulletin
+        let address = oxoKeyPairs.deriveAddress(json["Object"].PublicKey)
+        if (ClientConns[address] != null && ClientConns[address].readyState == WebSocket.OPEN) {
+            let msg = GenBulletinRequest(address, json["Object"].Sequence + 1, address)
+            ClientConns[address].send(msg)
+        }
     }
 }
 
@@ -305,6 +347,19 @@ function checkClientMessage(ws, message) {
                     ClientConns[address] = ws
                     updateAccountList()
                     //handleClientMessage(message, json)
+                    let SQL = `SELECT * FROM BULLETINS WHERE address = "${address}" ORDER BY sequence DESC`
+                    DB.get(SQL, (err, item) => {
+                        if (err) {
+                            console.log(err)
+                        } else {
+                            let sequence = 1
+                            if (item != null) {
+                                sequence = item.sequence + 1
+                            }
+                            let msg = GenBulletinRequest(address, sequence, address)
+                            ClientConns[address].send(msg)
+                        }
+                    })
                 } else if (ClientConns[address] != ws && ClientConns[address].readyState == WebSocket.OPEN) {
                     //new connection kick old conection with same address
                     //当前地址有对应连接，断开旧连接，当前地址对应到当前连接
