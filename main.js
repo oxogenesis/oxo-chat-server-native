@@ -193,7 +193,7 @@ function initDB() {
         })
     })
 
-    let SQL = `SELECT * FROM BULLETINS ORDER BY created_at DESC LIMIT 20`
+    let SQL = `SELECT * FROM BULLETINS ORDER BY created_at DESC`
     DB.all(SQL, (err, items) => {
         if (err) {
             console.log(err)
