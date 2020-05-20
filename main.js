@@ -180,6 +180,7 @@ function initDB() {
         //为账号地址起名
         DB.run(`CREATE TABLE IF NOT EXISTS BULLETINS(
             hash VARCHAR(32) PRIMARY KEY,
+            pre_hash VARCHAR(32),
             address VARCHAR(35) NOT NULL,
             sequence INTEGER NOT NULL,
             content TEXT NOT NULL,
@@ -250,8 +251,8 @@ function CacheBulletin(bulletin) {
     let hash = quarterSHA512(JSON.stringify(bulletin))
     let address = oxoKeyPairs.deriveAddress(bulletin.PublicKey)
     //console.log(hash)
-    let SQL = `INSERT INTO BULLETINS (hash, address, sequence, content, quote, json, signed_at, created_at)
-                VALUES ('${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', '${JSON.stringify(bulletin.Quote)}', '${JSON.stringify(bulletin)}', ${bulletin.Timestamp}, ${timestamp})`
+    let SQL = `INSERT INTO BULLETINS (hash, pre_hash, address, sequence, content, quote, json, signed_at, created_at)
+                VALUES ('${hash}', '${bulletin.PreHash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', '${JSON.stringify(bulletin.Quote)}', '${JSON.stringify(bulletin)}', ${bulletin.Timestamp}, ${timestamp})`
     DB.run(SQL, err => {
         if (err) {
             console.log(err)
@@ -478,7 +479,7 @@ http.createServer(function(request, response) {
                 } else {
                     let lis = ''
                     for (let i = 0; i < items.length; i++) {
-                        lis = lis + `<li><a href="/bulletin/${items[i].hash}">${items[i].address}#${items[i].sequence}</a> 缓存于${timestamp_format(items[i].created_at)}</li>`
+                        lis = lis + `<li><a href="/bulletin/${items[i].hash}">${items[i].address}#${items[i].sequence}</a> 缓存@${timestamp_format(items[i].created_at)}</li>`
                     }
                     response.writeHeader(200, {
                         "Content-Type": "text/html"
@@ -543,6 +544,10 @@ http.createServer(function(request, response) {
                         response.writeHeader(200, {
                             "Content-Type": "text/html"
                         });
+                        let pre_bulletin = ''
+                        if(item.pre_hash != 'F4C2EB8A3EBFC7B6D81676D79F928D0E'){
+                            pre_bulletin = `<h3><a href="/bulletin/${item.pre_hash}">上一篇</a></h3>`
+                        }
                         response.write(`
             <!DOCTYPE html>
             <html>
@@ -556,7 +561,8 @@ http.createServer(function(request, response) {
                 <h1>Bulletin#${hash}</h1>
                 <h3>${item.address}
                 <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
-                <h3> 发布于${timestamp_format(item.signed_at)}</h3>
+                <h3> 发布@${timestamp_format(item.signed_at)}</h3>
+                ${pre_bulletin}
                 <hr>
                 ${quote}
                 <h3>${item.content}</h3>
