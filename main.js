@@ -1,4 +1,3 @@
-//oxo
 const oxoKeyPairs = require("oxo-keypairs")
 
 //config
@@ -49,6 +48,8 @@ function halfSHA512(str) {
 function quarterSHA512(str) {
     return hasherSHA512(str).toUpperCase().substr(0, 32);
 }
+
+//oxo
 
 function strToHex(str) {
     let arr = []
@@ -142,6 +143,7 @@ function sendServerMessage(ws, msgCode) {
 
 //client connection
 let ClientConns = {}
+let accountList = 'obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf'
 
 function fetchClientConnAddress(ws) {
     for (let address in ClientConns) {
@@ -150,6 +152,14 @@ function fetchClientConnAddress(ws) {
         }
     }
     return null
+}
+
+function updateAccountList(argument) {
+    let accountArray = ['obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf']
+    for (let address in ClientConns) {
+        accountArray.push(address)
+    }
+    accountList = accountArray.join('<br>')
 }
 
 let ClientServer = null
@@ -280,7 +290,7 @@ function CacheBulletin(bulletin) {
     let bulletinMessage = JSON.stringify(bulletin)
     //console.log(hash)
     let SQL = `INSERT INTO BULLETINS (hash, pre_hash, address, sequence, content, quote, json, signed_at, created_at)
-                VALUES ('${hash}', '${bulletin.PreHash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', '${JSON.stringify(bulletin.Quote)}', '${bulletinMessage}', ${bulletin.Timestamp}, ${timestamp})`
+            VALUES ('${hash}', '${bulletin.PreHash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', '${JSON.stringify(bulletin.Quote)}', '${JSON.stringify(bulletin)}', ${bulletin.Timestamp}, ${timestamp})`
     DB.run(SQL, err => {
         if (err) {
             console.log(err)
@@ -308,7 +318,17 @@ function CacheBulletin(bulletin) {
 }
 
 function handleClientMessage(message, json) {
-    if (json["Action"] == ActionCode["BulletinRequest"]) {
+    if (json["To"] != null && ClientConns[json["To"]] != null && ClientConns[json["To"]].readyState == WebSocket.OPEN) {
+        //forward message
+        ClientConns[json["To"]].send(message)
+
+        //cache bulletin
+        if (json["Action"] == ActionCode["ObjectResponse"] && json["Object"]["ObjectType"] == ObjectType["Bulletin"]) {
+            //console.log(`###################LOG################### Client Message:`)
+            //console.log(message)
+            CacheBulletin(json["Object"])
+        }
+    } else if (json["Action"] == ActionCode["BulletinRequest"]) {
         //send cache bulletin
         let SQL = `SELECT * FROM BULLETINS WHERE address = "${json["Address"]}" AND sequence = "${json["Sequence"]}"`
         DB.get(SQL, (err, item) => {
@@ -372,6 +392,7 @@ function checkClientMessage(ws, message) {
                     //当前连接无对应地址，当前地址无对应连接，全新连接
                     console.log(`connection established from client <${address}>`)
                     ClientConns[address] = ws
+                    updateAccountList()
                     //handleClientMessage(message, json)
                     let SQL = `SELECT * FROM BULLETINS WHERE address = "${address}" ORDER BY sequence DESC`
                     DB.get(SQL, (err, item) => {
@@ -392,6 +413,7 @@ function checkClientMessage(ws, message) {
                     sendServerMessage(ClientConns[address], MessageCode["NewConnectionOpening"])
                     ClientConns[address].close()
                     ClientConns[address] = ws
+                    updateAccountList()
                     //handleClientMessage(message, json)
                 } else {
                     ws.send("WTF...")
@@ -507,13 +529,33 @@ http.createServer(function(request, response) {
       <html>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <head>
-          <title>oxo-bulletin-site</title>
+          <title>oxo-chat-server</title>
         </head>
         <body bgcolor="#8FBC8F">
           <h1><a href="/bulletins">缓存的公告</a></h1>
+          <h1><a href="/accounts">在线账号</a></h1>
           <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">客户端下载</a></h2>
           <h2>本站服务地址：${SelfURL}</h2>
           <h2>本站服务账号：${Address}</h2>
+        </body>
+      </html>
+      `);
+            response.end();
+        } else if (path == "/accounts") {
+            response.writeHeader(200, {
+                "Content-Type": "text/html"
+            });
+            response.write(`
+      <!DOCTYPE html>
+      <html>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <head>
+          <title>oxo-chat-server</title>
+        </head>
+        <body bgcolor="#8FBC8F">
+          <h1>在线账号</h1>
+          <h1><a href="/bulletins">缓存的公告</a></h1>
+          ${accountList}
         </body>
       </html>
       `);
@@ -540,9 +582,10 @@ http.createServer(function(request, response) {
           <html>
             <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
             <head>
-              <title>oxo-bulletin-site</title>
+              <title>oxo-chat-server</title>
             </head>
             <body bgcolor="#8FBC8F">
+              <h1><a href="/accounts">在线账号</a></h1>
               <h1>缓存的公告</h1>
               <ul>
               ${lis}
@@ -570,9 +613,10 @@ http.createServer(function(request, response) {
             <html>
               <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
               <head>
-                <title>oxo-bulletin-site</title>
+                <title>oxo-chat-server</title>
               </head>
               <body bgcolor="#8FBC8F">
+                <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
                 <h1>未被缓存...</h1>
@@ -602,14 +646,15 @@ http.createServer(function(request, response) {
             <html>
               <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
               <head>
-                <title>oxo-bulletin-site</title>
+                <title>oxo-chat-server</title>
               </head>
               <body bgcolor="#8FBC8F">
+                <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
                 <h3>${item.address}
                 <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
-                <h3>发布@${timestamp_format(item.signed_at)}</h3>
+                <h3> 发布@${timestamp_format(item.signed_at)}</h3>
                 ${pre_bulletin}
                 <hr>
                 ${quote}
@@ -638,9 +683,10 @@ http.createServer(function(request, response) {
             <html>
               <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
               <head>
-                <title>oxo-bulletin-site</title>
+                <title>oxo-chat-server</title>
               </head>
               <body bgcolor="#8FBC8F">
+                <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
                 <h1>未被缓存...</h1>
