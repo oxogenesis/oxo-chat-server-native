@@ -525,7 +525,7 @@ http.createServer(function(request, response) {
           <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">客户端下载</a></h2>
           <h2>本站服务地址：${SelfURL}</h2>
           <h2>本站服务账号：${Address}</h2>
-          <h2>{"URL": "${SelfURL}", "Address": "${Address}"}</h2>
+          <h3>{"URL": "${SelfURL}", "Address": "${Address}"}</h3>
         </body>
       </html>
       `);
@@ -555,7 +555,6 @@ http.createServer(function(request, response) {
               <title>oxo-chat-server</title>
             </head>
             <body bgcolor="#8FBC8F">
-              <h1><a href="/accounts">在线账号</a></h1>
               <h1>缓存的公告</h1>
               <ul>
               ${lis}
@@ -586,7 +585,6 @@ http.createServer(function(request, response) {
                 <title>oxo-chat-server</title>
               </head>
               <body bgcolor="#8FBC8F">
-                <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
                 <h1>未被缓存...</h1>
@@ -619,7 +617,6 @@ http.createServer(function(request, response) {
                 <title>oxo-chat-server</title>
               </head>
               <body bgcolor="#8FBC8F">
-                <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
                 <h3>${item.address}
@@ -656,7 +653,6 @@ http.createServer(function(request, response) {
                 <title>oxo-chat-server</title>
               </head>
               <body bgcolor="#8FBC8F">
-                <h1><a href="/accounts">在线账号</a></h1>
                 <h1><a href="/bulletins">缓存的公告</a></h1>
                 <h1>Bulletin#${hash}</h1>
                 <h1>未被缓存...</h1>
