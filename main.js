@@ -383,7 +383,6 @@ function checkClientMessage(ws, message) {
                     //当前连接无对应地址，当前地址无对应连接，全新连接
                     console.log(`connection established from client <${address}>`)
                     ClientConns[address] = ws
-                    updateAccountList()
                     //handleClientMessage(message, json)
                     let SQL = `SELECT * FROM BULLETINS WHERE address = "${address}" ORDER BY sequence DESC`
                     DB.get(SQL, (err, item) => {
@@ -404,7 +403,6 @@ function checkClientMessage(ws, message) {
                     sendServerMessage(ClientConns[address], MessageCode["NewConnectionOpening"])
                     ClientConns[address].close()
                     ClientConns[address] = ws
-                    updateAccountList()
                     //handleClientMessage(message, json)
                 } else {
                     ws.send("WTF...")
