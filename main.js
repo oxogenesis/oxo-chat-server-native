@@ -143,7 +143,6 @@ function sendServerMessage(ws, msgCode) {
 
 //client connection
 let ClientConns = {}
-let accountList = 'obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf'
 
 function fetchClientConnAddress(ws) {
     for (let address in ClientConns) {
@@ -152,14 +151,6 @@ function fetchClientConnAddress(ws) {
         }
     }
     return null
-}
-
-function updateAccountList(argument) {
-    let accountArray = ['obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf']
-    for (let address in ClientConns) {
-        accountArray.push(address)
-    }
-    accountList = accountArray.join('<br>')
 }
 
 let ClientServer = null
@@ -537,25 +528,6 @@ http.createServer(function(request, response) {
           <h2>本站服务地址：${SelfURL}</h2>
           <h2>本站服务账号：${Address}</h2>
           <h2>{"URL": "${SelfURL}", "Address": "${Address}"}</h2>
-        </body>
-      </html>
-      `);
-            response.end();
-        } else if (path == "/accounts") {
-            response.writeHeader(200, {
-                "Content-Type": "text/html"
-            });
-            response.write(`
-      <!DOCTYPE html>
-      <html>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <head>
-          <title>oxo-chat-server</title>
-        </head>
-        <body bgcolor="#8FBC8F">
-          <h1>在线账号</h1>
-          <h1><a href="/bulletins">缓存的公告</a></h1>
-          ${accountList}
         </body>
       </html>
       `);
