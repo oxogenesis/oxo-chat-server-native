@@ -542,7 +542,7 @@ http.createServer(function(request, response) {
                 } else {
                     let lis = ''
                     for (let i = 0; i < items.length; i++) {
-                        lis = lis + `<li><a href="/bulletin/${items[i].hash}">${items[i].address}#${items[i].sequence}</a> 缓存@${timestamp_format(items[i].created_at)}</li>`
+                        lis = lis + `<li><a href="/bulletin/${items[i].hash}"><code>${items[i].address}#${items[i].sequence}</code></a> 缓存@${timestamp_format(items[i].created_at)}</li>`
                     }
                     response.writeHeader(200, {
                         "Content-Type": "text/html"
