@@ -555,7 +555,7 @@ http.createServer(function(request, response) {
               <title>oxo-chat-server</title>
             </head>
             <body bgcolor="#8FBC8F">
-              <h1>缓存的公告</h1>
+              <h1><a href="/bulletins">缓存的公告</a></h1>
               <ul>
               ${lis}
               </ul>
