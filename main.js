@@ -174,6 +174,8 @@ let PageSize = 10
 let PageCount = BulletinCount / PageSize
 let PageLinks = ''
 
+let BulletinAccounts = []
+
 function initDB() {
     //建库：数据库名为账号地址
     DB = new sqlite3.Database(`./cache.db`)
@@ -210,6 +212,17 @@ function initDB() {
                     PageLinkArray.push(`<a href="/bulletins?page=${i}">${i}</a>`)
                 }
                 PageLinks = PageLinkArray.join(' ')
+            }
+        }
+    })
+
+    SQL = `SELECT * FROM BULLETINS GROUP BY address`
+    DB.all(SQL, (err, items) => {
+        if (err) {
+            console.log(err)
+        } else {
+            for (let i = 0; i < items.length; i++) {
+                BulletinAccounts.push({'address':items[i].address, 'sequence':0})
             }
         }
     })
@@ -295,6 +308,13 @@ function CacheBulletin(bulletin) {
                     PageLinkArray.push(`<a href="/bulletins?page=${i}">${i}</a>`)
                 }
                 PageLinks = PageLinkArray.join(' ')
+            }
+
+            //update account sequence
+            for (let i = 0; i < BulletinAccounts.length; i++) {
+                if (BulletinAccounts[i].address == address && BulletinAccounts[i].sequence < bulletin.sequence) {
+                    BulletinAccounts[i].sequence = bulletin.sequence
+                }
             }
 
             //Brocdcast to OtherServer
@@ -493,6 +513,8 @@ const url = require("url")
 const bulletins_reg = /^\/bulletins\?page=\d+/
 const bulletin_reg = /^\/bulletin\/[0123456789ABCDEF]{32}$/
 const bulletin_json_reg = /^\/bulletin\/[0123456789ABCDEF]{32}\/json$/
+const account_bulletins_reg = /^\/account\/o[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{32,33}\/bulletins/
+const account = /^o[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{32,33}\//
 
 function add0(m) { return m < 10 ? '0' + m : m }
 
@@ -514,21 +536,22 @@ http.createServer(function(request, response) {
                 "Content-Type": "text/html"
             });
             response.write(`
-      <!DOCTYPE html>
-      <html>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <head>
-          <title>oxo-chat-server</title>
-        </head>
-        <body bgcolor="#8FBC8F">
-          <h1><a href="/bulletins">缓存的公告</a></h1>
-          <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">客户端下载</a></h2>
-          <h2>本站服务地址：${SelfURL}</h2>
-          <h2>本站服务账号：${Address}</h2>
-          <h3>{"URL": "${SelfURL}", "Address": "${Address}"}</h3>
-        </body>
-      </html>
-      `);
+            <!DOCTYPE html>
+            <html>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+            <head>
+              <title>oxo-chat-server</title>
+            </head>
+            <body bgcolor="#8FBC8F">
+              <h1><a href="/bulletins">公告列表</a></h1>
+              <h1><a href="/accounts">作者列表</a></h1>
+              <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">客户端下载</a></h2>
+              <h2>本站服务地址：${SelfURL}</h2>
+              <h2>本站服务账号：${Address}</h2>
+              <h3>{"URL": "${SelfURL}", "Address": "${Address}"}</h3>
+            </body>
+            </html>
+            `);
             response.end();
         } else if (path == "/bulletins" || bulletins_reg.test(path)) {
             let page = 1
@@ -548,21 +571,21 @@ http.createServer(function(request, response) {
                         "Content-Type": "text/html"
                     });
                     response.write(`
-          <!DOCTYPE html>
-          <html>
-            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-            <head>
-              <title>oxo-chat-server</title>
-            </head>
-            <body bgcolor="#8FBC8F">
-              <h1><a href="/bulletins">缓存的公告</a></h1>
-              <ul>
-              ${lis}
-              </ul>
-              ${PageLinks}
-            </body>
-          </html>
-          `);
+                    <!DOCTYPE html>
+                    <html>
+                    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                    <head>
+                      <title>oxo-chat-server</title>
+                    </head>
+                    <body bgcolor="#8FBC8F">
+                      <h1>公告列表</h1>
+                      <ul>
+                      ${lis}
+                      </ul>
+                      ${PageLinks}
+                    </body>
+                    </html>
+                    `);
                     response.end();
                 }
             })
@@ -578,19 +601,19 @@ http.createServer(function(request, response) {
                             "Content-Type": "text/html"
                         });
                         response.write(`
-            <!DOCTYPE html>
-            <html>
-              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-              <head>
-                <title>oxo-chat-server</title>
-              </head>
-              <body bgcolor="#8FBC8F">
-                <h1><a href="/bulletins">缓存的公告</a></h1>
-                <h1>Bulletin#${hash}</h1>
-                <h1>未被缓存...</h1>
-              </body>
-            </html>
-            `)
+                        <!DOCTYPE html>
+                        <html>
+                          <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                          <head>
+                            <title>oxo-chat-server</title>
+                          </head>
+                          <body bgcolor="#8FBC8F">
+                            <h1><a href="/bulletins">公告列表</a></h1>
+                            <h1>Bulletin#${hash}</h1>
+                            <h1>未被缓存...</h1>
+                          </body>
+                        </html>
+                        `)
                         response.end();
                     } else {
                         let quote = ''
@@ -610,27 +633,95 @@ http.createServer(function(request, response) {
                             pre_bulletin = `<h3><a href="/bulletin/${item.pre_hash}">上一篇</a></h3>`
                         }
                         response.write(`
-            <!DOCTYPE html>
-            <html>
-              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-              <head>
-                <title>oxo-chat-server</title>
-              </head>
-              <body bgcolor="#8FBC8F">
-                <h1><a href="/bulletins">缓存的公告</a></h1>
-                <h1>Bulletin#${hash}</h1>
-                <h3>${item.address}
-                <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
-                <h3> 发布@${timestamp_format(item.signed_at)}</h3>
-                ${pre_bulletin}
-                <hr>
-                ${quote}
-                <h3>${item.content}</h3>
-              </body>
-            </html>
-            `);
+                        <!DOCTYPE html>
+                        <html>
+                          <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                          <head>
+                            <title>oxo-chat-server</title>
+                          </head>
+                          <body bgcolor="#8FBC8F">
+                            <h1><a href="/bulletins">公告列表</a></h1>
+                            <h1>Bulletin#${hash}</h1>
+                            <h3>${item.address}
+                            <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
+                            <h3> 发布@${timestamp_format(item.signed_at)}</h3>
+                            ${pre_bulletin}
+                            <hr>
+                            ${quote}
+                            <h3>${item.content}</h3>
+                          </body>
+                        </html>
+                        `);
                         response.end();
                     }
+                }
+            })
+        } else if (path == "/accounts") {
+            let lis = ''
+            for (let i = 0; i < BulletinAccounts.length; i++) {
+                lis = lis + `<li><a href="/account/${BulletinAccounts[i].address}/bulletins"><code>${BulletinAccounts[i].address}</code></a>#${BulletinAccounts[i].sequence}</li>`
+            }
+            response.writeHeader(200, {
+                "Content-Type": "text/html"
+            });
+            response.write(`
+            <!DOCTYPE html>
+            <html>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+            <head>
+              <title>oxo-chat-server</title>
+            </head>
+            <body bgcolor="#8FBC8F">
+              <h1>作者列表</h1>
+              <ul>
+              ${lis}
+              </ul>
+            </body>
+            </html>
+            `);
+            response.end();
+        } else if (account_bulletins_reg.test(path)) {
+            let address = path.replace('/account/','')
+            address = address.replace('/bulletins','')
+            let SQL = `SELECT * FROM BULLETINS WHERE address = '${address}' ORDER BY sequence DESC`
+            DB.all(SQL, (err, items) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    //update account sequence
+                    let sequence = 0
+                    if (items.length > 0) {
+                        sequence = items[0].sequence
+                    }
+                    for (let i = 0; i < BulletinAccounts.length; i++) {
+                        if (BulletinAccounts[i].address == address && BulletinAccounts[i].sequence < sequence) {
+                            BulletinAccounts[i].sequence = sequence
+                        }
+                    }
+
+                    let lis = ''
+                    for (let i = 0; i < items.length; i++) {
+                        lis = lis + `<li><a href="/bulletin/${items[i].hash}"><code>${items[i].address}#${items[i].sequence}</code></a> 缓存@${timestamp_format(items[i].created_at)}</li>`
+                    }
+                    response.writeHeader(200, {
+                        "Content-Type": "text/html"
+                    });
+                    response.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                    <head>
+                      <title>oxo-chat-server</title>
+                    </head>
+                    <body bgcolor="#8FBC8F">
+                      <h1>公告列表</h1>
+                      <ul>
+                      ${lis}
+                      </ul>
+                    </body>
+                    </html>
+                    `);
+                    response.end();
                 }
             })
         } else if (bulletin_json_reg.test(path)) {
@@ -646,19 +737,19 @@ http.createServer(function(request, response) {
                             "Content-Type": "text/html"
                         });
                         response.write(`
-            <!DOCTYPE html>
-            <html>
-              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-              <head>
-                <title>oxo-chat-server</title>
-              </head>
-              <body bgcolor="#8FBC8F">
-                <h1><a href="/bulletins">缓存的公告</a></h1>
-                <h1>Bulletin#${hash}</h1>
-                <h1>未被缓存...</h1>
-              </body>
-            </html>
-            `)
+                        <!DOCTYPE html>
+                        <html>
+                          <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                          <head>
+                            <title>oxo-chat-server</title>
+                          </head>
+                          <body bgcolor="#8FBC8F">
+                            <h1><a href="/bulletins">公告列表</a></h1>
+                            <h1>Bulletin#${hash}</h1>
+                            <h1>未被缓存...</h1>
+                          </body>
+                        </html>
+                        `)
                         response.end();
                     } else {
                         response.writeHeader(200, {
