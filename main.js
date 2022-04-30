@@ -339,7 +339,9 @@ function handleClientMessage(message, json) {
             //console.log(message)
             CacheBulletin(json["Object"])
         }
-    } else if (json["Action"] == ActionCode["BulletinRequest"]) {
+    } 
+
+    if (json["Action"] == ActionCode["BulletinRequest"]) {
         //send cache bulletin
         let SQL = `SELECT * FROM BULLETINS WHERE address = "${json["Address"]}" AND sequence = "${json["Sequence"]}"`
         DB.get(SQL, (err, item) => {
@@ -364,8 +366,8 @@ function handleClientMessage(message, json) {
 }
 
 function checkClientMessage(ws, message) {
-    //console.log(`###################LOG################### Client Message:`)
-    //console.log(`${message}`)
+    // console.log(`###################LOG################### Client Message:`)
+    // console.log(`${message}`)
     let json = Schema.checkClientSchema(message)
     if (json == false) {
         //json格式不合法
