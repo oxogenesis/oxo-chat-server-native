@@ -92,6 +92,7 @@ let ActionCode = {
     "Declare": 100,
     "ObjectResponse": 101,
 
+    "BulletinRandom": 200,
     "BulletinRequest": 201,
     "BulletinFileRequest": 202,
 
@@ -354,6 +355,20 @@ function handleClientMessage(message, json) {
                 }
             }
         })
+    } else if (json["Action"] == ActionCode["BulletinRandom"]) {
+        console.log("=====================random")
+        //send random bulletin
+        let SQL = `SELECT * FROM BULLETINS ORDER BY RANDOM() LIMIT 1`
+        DB.get(SQL, (err, item) => {
+            if (err) {
+                console.log(err)
+            } else {
+                if (item != null) {
+                    let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
+                    ClientConns[address].send(item.json)
+                }
+            }
+        })
     } else if (json["To"] == Address && json["Action"] == ActionCode["ObjectResponse"] && json["Object"]["ObjectType"] == ObjectType["Bulletin"]) {
         CacheBulletin(json["Object"])
         //fetch more bulletin
@@ -366,13 +381,13 @@ function handleClientMessage(message, json) {
 }
 
 function checkClientMessage(ws, message) {
-    // console.log(`###################LOG################### Client Message:`)
-    // console.log(`${message}`)
+    console.log(`###################LOG################### Client Message:`)
+    console.log(`${message}`)
     let json = Schema.checkClientSchema(message)
     if (json == false) {
         //json格式不合法
         sendServerMessage(ws, MessageCode["JsonSchemaInvalid"])
-        //console.log(`${message}`)
+        // console.log(`json格式不合法`)
         teminateClientConn(ws)
     } else {
         let address = oxoKeyPairs.deriveAddress(json["PublicKey"])

@@ -47,6 +47,26 @@ let ObjectResponseSchema = {
 }
 
 //>>>bulletin<<<
+let BulletinRandomSchema = {
+  "type": "object",
+  "required": ["Action", "Timestamp", "PublicKey", "Signature"],
+  "maxProperties": 4,
+  "properties": {
+    "Action": {
+      "type": "number"
+    },
+    "Timestamp": {
+      "type": "number"
+    },
+    "PublicKey": {
+      "type": "string"
+    },
+    "Signature": {
+      "type": "string"
+    }
+  }
+}
+
 let BulletinRequestSchema = {
   "type": "object",
   "required": ["Action", "Address", "Sequence", "To", "Timestamp", "PublicKey", "Signature"],
@@ -342,6 +362,7 @@ var ajv = new Ajv({ allErrors: true })
 var vDeclare = ajv.compile(DeclareSchema)
 var vObjectResponseSchema = ajv.compile(ObjectResponseSchema)
 
+var vBulletinRandomSchema = ajv.compile(BulletinRandomSchema)
 var vBulletinRequestSchema = ajv.compile(BulletinRequestSchema)
 var vFileRequestSchema = ajv.compile(FileRequestSchema)
 
@@ -358,7 +379,7 @@ function checkClientSchema(strJson) {
   if (typeof strJson == "string") {
     try {
       let json = JSON.parse(strJson)
-      if (vObjectResponseSchema(json) || vBulletinRequestSchema(json) || vFileRequestSchema(json) || vChatMessageSchema(json) || vChatSyncSchema(json) || vChatDHSchema(json) || vDeclare(json) || vGroupRequestSchema(json) || vGroupManageSyncSchema(json) || vGroupDHSchema(json) || vGroupMessageSyncSchema(json)) {
+      if (vObjectResponseSchema(json) || vBulletinRandomSchema(json) || vBulletinRequestSchema(json) || vFileRequestSchema(json) || vChatMessageSchema(json) || vChatSyncSchema(json) || vChatDHSchema(json) || vDeclare(json) || vGroupRequestSchema(json) || vGroupManageSyncSchema(json) || vGroupDHSchema(json) || vGroupMessageSyncSchema(json)) {
         return json
       } else {
         return false
