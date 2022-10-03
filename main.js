@@ -562,7 +562,8 @@ http.createServer(function(request, response) {
             <body bgcolor="#8FBC8F">
               <h1><a href="/bulletins">公告列表</a></h1>
               <h1><a href="/accounts">作者列表</a></h1>
-              <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">客户端下载</a></h2>
+              <h2><a href="https://github.com/oxogenesis/oxo-chat-app/releases">App下载（on android推荐）</a></h2>
+              <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">Client下载(electron on windows不推荐)</a></h2>
               <h2>本站服务地址：${SelfURL}</h2>
               <h2>本站服务账号：${Address}</h2>
               <h3>{"URL": "${SelfURL}", "Address": "${Address}"}</h3>
