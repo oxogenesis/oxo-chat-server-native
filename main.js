@@ -1,9 +1,11 @@
 const oxoKeyPairs = require("oxo-keypairs")
 
 //config
-const SelfURL = "ws://127.0.0.1:3000"
+//const SelfURL = "ws://127.0.0.1:3000"
 //standalone server
-const Seed = oxoKeyPairs.generateSeed("obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf", 'secp256k1')
+//const Seed = oxoKeyPairs.generateSeed("obeTvR9XDbUwquA6JPQhmbgaCCaiFa2rvf", 'secp256k1')
+const SelfURL = "wss://ru.oxo-chat-server.com"
+const Seed = "xxJTfMGZPavnqHhcEcHw5ToPCHftw"
 const OtherServer = []
 
 //interconnect servers
@@ -92,6 +94,7 @@ let ActionCode = {
     "Declare": 100,
     "ObjectResponse": 101,
 
+    "BulletinRandom": 200,
     "BulletinRequest": 201,
     "BulletinFileRequest": 202,
 
@@ -339,9 +342,25 @@ function handleClientMessage(message, json) {
             //console.log(message)
             CacheBulletin(json["Object"])
         }
-    } else if (json["Action"] == ActionCode["BulletinRequest"]) {
+    } 
+
+    if (json["Action"] == ActionCode["BulletinRequest"]) {
         //send cache bulletin
         let SQL = `SELECT * FROM BULLETINS WHERE address = "${json["Address"]}" AND sequence = "${json["Sequence"]}"`
+        DB.get(SQL, (err, item) => {
+            if (err) {
+                console.log(err)
+            } else {
+                if (item != null) {
+                    let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
+                    ClientConns[address].send(item.json)
+                }
+            }
+        })
+    } else if (json["Action"] == ActionCode["BulletinRandom"]) {
+        console.log("=====================random")
+        //send random bulletin
+        let SQL = `SELECT * FROM BULLETINS ORDER BY RANDOM() LIMIT 1`
         DB.get(SQL, (err, item) => {
             if (err) {
                 console.log(err)
@@ -364,13 +383,13 @@ function handleClientMessage(message, json) {
 }
 
 function checkClientMessage(ws, message) {
-    //console.log(`###################LOG################### Client Message:`)
-    // console.log(`${message}`)
+    console.log(`###################LOG################### Client Message:`)
+    console.log(`${message}`)
     let json = Schema.checkClientSchema(message)
     if (json == false) {
         //json格式不合法
         sendServerMessage(ws, MessageCode["JsonSchemaInvalid"])
-        //console.log(`${message}`)
+        // console.log(`json格式不合法`)
         teminateClientConn(ws)
     } else {
         let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
@@ -546,7 +565,8 @@ http.createServer(function(request, response) {
             <body bgcolor="#8FBC8F">
               <h1><a href="/bulletins">公告列表</a></h1>
               <h1><a href="/accounts">作者列表</a></h1>
-              <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">客户端下载</a></h2>
+              <h2><a href="https://github.com/oxogenesis/oxo-chat-app/releases">App下载（on android推荐）</a></h2>
+              <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">Client下载（electron on windows不推荐）</a></h2>
               <h2>本站服务地址：${SelfURL}</h2>
               <h2>本站服务账号：${Address}</h2>
               <h3>{"URL": "${SelfURL}", "Address": "${Address}"}</h3>
@@ -619,7 +639,6 @@ http.createServer(function(request, response) {
                     } else {
                         let quote = ''
                         let quotes = JSON.parse(item.quote)
-                        let content = item.content.replace(/\n/g, '<br>')
                         if (quotes.length != '') {
                             quote = '<h3>引用</h3><ul>'
                             for (let i = quotes.length - 1; i >= 0; i--) {
@@ -651,7 +670,7 @@ http.createServer(function(request, response) {
                             ${pre_bulletin}${next_bulletin}
                             <hr>
                             ${quote}
-                            <h3>${content}</h3>
+                            <h3>${item.content}</h3>
                           </body>
                         </html>
                         `);
