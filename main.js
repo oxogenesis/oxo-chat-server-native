@@ -637,6 +637,7 @@ http.createServer(function(request, response) {
                         `)
                         response.end();
                     } else {
+                        let content = item.content.replace(/\n/g, '<br>')
                         let quote = ''
                         let quotes = JSON.parse(item.quote)
                         if (quotes.length != '') {
@@ -670,7 +671,7 @@ http.createServer(function(request, response) {
                             ${pre_bulletin}${next_bulletin}
                             <hr>
                             ${quote}
-                            <h3>${item.content}</h3>
+                            <h3>${content}</h3>
                           </body>
                         </html>
                         `);
@@ -705,9 +706,9 @@ http.createServer(function(request, response) {
                         `)
                         response.end();
                     } else {
+                        let content = item.content.replace(/\n/g, '<br>')
                         let quote = ''
                         let quotes = JSON.parse(item.quote)
-                        let content = item.content.replace(/\n/g, '<br>')
                         if (quotes.length != '') {
                             quote = '<h3>引用</h3><ul>'
                             for (let i = quotes.length - 1; i >= 0; i--) {
