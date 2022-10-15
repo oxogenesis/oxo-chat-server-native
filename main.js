@@ -92,7 +92,6 @@ let ActionCode = {
     "Declare": 100,
     "ObjectResponse": 101,
 
-    "BulletinRandom": 200,
     "BulletinRequest": 201,
     "BulletinFileRequest": 202,
 
@@ -340,25 +339,9 @@ function handleClientMessage(message, json) {
             //console.log(message)
             CacheBulletin(json["Object"])
         }
-    } 
-
-    if (json["Action"] == ActionCode["BulletinRequest"]) {
+    } else if (json["Action"] == ActionCode["BulletinRequest"]) {
         //send cache bulletin
         let SQL = `SELECT * FROM BULLETINS WHERE address = "${json["Address"]}" AND sequence = "${json["Sequence"]}"`
-        DB.get(SQL, (err, item) => {
-            if (err) {
-                console.log(err)
-            } else {
-                if (item != null) {
-                    let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
-                    ClientConns[address].send(item.json)
-                }
-            }
-        })
-    } else if (json["Action"] == ActionCode["BulletinRandom"]) {
-        console.log("=====================random")
-        //send random bulletin
-        let SQL = `SELECT * FROM BULLETINS ORDER BY RANDOM() LIMIT 1`
         DB.get(SQL, (err, item) => {
             if (err) {
                 console.log(err)
@@ -381,13 +364,13 @@ function handleClientMessage(message, json) {
 }
 
 function checkClientMessage(ws, message) {
-    console.log(`###################LOG################### Client Message:`)
-    console.log(`${message}`)
+    //console.log(`###################LOG################### Client Message:`)
+    // console.log(`${message}`)
     let json = Schema.checkClientSchema(message)
     if (json == false) {
         //json格式不合法
         sendServerMessage(ws, MessageCode["JsonSchemaInvalid"])
-        // console.log(`json格式不合法`)
+        //console.log(`${message}`)
         teminateClientConn(ws)
     } else {
         let address = oxoKeyPairs.deriveAddress(json["PublicKey"])
@@ -529,6 +512,7 @@ const url = require("url")
 
 const bulletins_reg = /^\/bulletins\?page=\d+/
 const bulletin_reg = /^\/bulletin\/[0123456789ABCDEF]{32}$/
+const bulletin_next_reg = /^\/bulletin_next\/[0123456789ABCDEF]{32}$/
 const bulletin_json_reg = /^\/bulletin\/[0123456789ABCDEF]{32}\/json$/
 const account_bulletins_reg = /^\/account\/o[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{32,33}\/bulletins/
 const account = /^o[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{32,33}\//
@@ -562,8 +546,7 @@ http.createServer(function(request, response) {
             <body bgcolor="#8FBC8F">
               <h1><a href="/bulletins">公告列表</a></h1>
               <h1><a href="/accounts">作者列表</a></h1>
-              <h2><a href="https://github.com/oxogenesis/oxo-chat-app/releases">App下载（on android推荐）</a></h2>
-              <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">Client下载(electron on windows不推荐)</a></h2>
+              <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">客户端下载</a></h2>
               <h2>本站服务地址：${SelfURL}</h2>
               <h2>本站服务账号：${Address}</h2>
               <h3>{"URL": "${SelfURL}", "Address": "${Address}"}</h3>
@@ -636,6 +619,7 @@ http.createServer(function(request, response) {
                     } else {
                         let quote = ''
                         let quotes = JSON.parse(item.quote)
+                        let content = item.content.replace(/\n/g, '<br>')
                         if (quotes.length != '') {
                             quote = '<h3>引用</h3><ul>'
                             for (let i = quotes.length - 1; i >= 0; i--) {
@@ -650,6 +634,7 @@ http.createServer(function(request, response) {
                         if (item.pre_hash != 'F4C2EB8A3EBFC7B6D81676D79F928D0E') {
                             pre_bulletin = `<h3><a href="/bulletin/${item.pre_hash}">上一篇</a></h3>`
                         }
+                        let next_bulletin = `<h3><a href="/bulletin_next/${item.hash}">下一篇</a></h3>`
                         response.write(`
                         <!DOCTYPE html>
                         <html>
@@ -663,10 +648,79 @@ http.createServer(function(request, response) {
                             <h3>${item.address}
                             <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
                             <h3> 发布@${timestamp_format(item.signed_at)}</h3>
-                            ${pre_bulletin}
+                            ${pre_bulletin}${next_bulletin}
                             <hr>
                             ${quote}
-                            <h3>${item.content}</h3>
+                            <h3>${content}</h3>
+                          </body>
+                        </html>
+                        `);
+                        response.end();
+                    }
+                }
+            })
+        } else if (bulletin_next_reg.test(path)) {
+            let hash = path.replace(/^\/bulletin_next\//, '')
+            let SQL = `SELECT * FROM BULLETINS WHERE pre_hash = "${hash}"`
+            DB.get(SQL, (err, item) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    if (item == null) {
+                        response.writeHeader(200, {
+                            "Content-Type": "text/html"
+                        });
+                        response.write(`
+                        <!DOCTYPE html>
+                        <html>
+                          <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                          <head>
+                            <title>oxo-chat-server</title>
+                          </head>
+                          <body bgcolor="#8FBC8F">
+                            <h1><a href="/bulletins">公告列表</a></h1>
+                            <h1>Bulletin#${hash}</h1>
+                            <h1>未被缓存...</h1>
+                          </body>
+                        </html>
+                        `)
+                        response.end();
+                    } else {
+                        let quote = ''
+                        let quotes = JSON.parse(item.quote)
+                        let content = item.content.replace(/\n/g, '<br>')
+                        if (quotes.length != '') {
+                            quote = '<h3>引用</h3><ul>'
+                            for (let i = quotes.length - 1; i >= 0; i--) {
+                                quote = quote + `<li><a href="/bulletin/${quotes[i].Hash}">${quotes[i].Address}#${quotes[i].Sequence}</a></li>`
+                            }
+                            quote = quote + '</ul><hr>'
+                        }
+                        response.writeHeader(200, {
+                            "Content-Type": "text/html"
+                        });
+                        let pre_bulletin = ''
+                        if (item.pre_hash != 'F4C2EB8A3EBFC7B6D81676D79F928D0E') {
+                            pre_bulletin = `<h3><a href="/bulletin/${item.pre_hash}">上一篇</a></h3>`
+                        }
+                        let next_bulletin = `<h3><a href="/bulletin_next/${item.hash}">下一篇</a></h3>`
+                        response.write(`
+                        <!DOCTYPE html>
+                        <html>
+                          <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                          <head>
+                            <title>oxo-chat-server</title>
+                          </head>
+                          <body bgcolor="#8FBC8F">
+                            <h1><a href="/bulletins">公告列表</a></h1>
+                            <h1>Bulletin#${hash}</h1>
+                            <h3>${item.address}
+                            <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
+                            <h3> 发布@${timestamp_format(item.signed_at)}</h3>
+                            ${pre_bulletin}${next_bulletin}
+                            <hr>
+                            ${quote}
+                            <h3>${content}</h3>
                           </body>
                         </html>
                         `);
