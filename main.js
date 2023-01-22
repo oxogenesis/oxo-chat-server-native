@@ -188,6 +188,7 @@ function initDB() {
     DB.run(`CREATE TABLE IF NOT EXISTS BULLETINS(
             hash VARCHAR(32) PRIMARY KEY,
             pre_hash VARCHAR(32),
+            next_hash VARCHAR(32),
             address VARCHAR(35) NOT NULL,
             sequence INTEGER NOT NULL,
             content TEXT NOT NULL,
@@ -195,6 +196,19 @@ function initDB() {
             json TEXT NOT NULL,
             signed_at INTEGER NOT NULL,
             created_at INTEGER NOT NULL)`, err => {
+      if (err) {
+        console.log(err)
+      }
+    })
+
+    DB.run(`CREATE TABLE IF NOT EXISTS QUOTES(
+      main_hash VARCHAR(32) NOT NULL,
+      quote_hash VARCHAR(32) NOT NULL,
+      address VARCHAR(35) NOT NULL,
+      sequence INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      signed_at INTEGER NOT NULL,
+      PRIMARY KEY ( main_hash, quote_hash ) )`, err => {
       if (err) {
         console.log(err)
       }
@@ -294,8 +308,6 @@ function CacheBulletin(bulletin) {
   let timestamp = Date.now()
   let hash = quarterSHA512(JSON.stringify(bulletin))
   let address = oxoKeyPairs.deriveAddress(bulletin.PublicKey)
-  let bulletinMessage = JSON.stringify(bulletin)
-  //console.log(hash)
   let SQL = `INSERT INTO BULLETINS (hash, pre_hash, address, sequence, content, quote, json, signed_at, created_at)
             VALUES ('${hash}', '${bulletin.PreHash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', '${JSON.stringify(bulletin.Quote)}', '${JSON.stringify(bulletin)}', ${bulletin.Timestamp}, ${timestamp})`
   DB.run(SQL, err => {
@@ -319,6 +331,25 @@ function CacheBulletin(bulletin) {
           BulletinAccounts[i].sequence = bulletin.sequence
         }
       }
+
+      //update pre_bulletin's next_hash
+      SQL = `UPDATE BULLETINS SET next_hash = '${hash}' WHERE hash = "${bulletin.PreHash}"`
+      DB.run(SQL, (err) => {
+        if (err) {
+          console.log(err)
+        }
+      })
+
+      //update quote
+      bulletin.Quotes.forEach(quote => {
+        SQL = `INSERT INTO QUOTES (main_hash, quote_hash, address, sequence, content, signed_at)
+               VALUES ('${quote.Hash}', '${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', ${bulletin.Timestamp})`
+        DB.run(SQL, (err) => {
+          if (err) {
+            console.log(err)
+          }
+        })
+      });
 
       //Brocdcast to OtherServer
       for (let i in OtherServer) {
@@ -531,7 +562,6 @@ const url = require("url")
 
 const bulletins_reg = /^\/bulletins\?page=\d+/
 const bulletin_reg = /^\/bulletin\/[0123456789ABCDEF]{32}$/
-const bulletin_next_reg = /^\/bulletin_next\/[0123456789ABCDEF]{32}$/
 const bulletin_json_reg = /^\/bulletin\/[0123456789ABCDEF]{32}\/json$/
 const account_bulletins_reg = /^\/account\/o[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{32,33}\/bulletins/
 const account = /^o[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{32,33}\//
@@ -565,6 +595,7 @@ http.createServer(function (request, response) {
             <body bgcolor="#8FBC8F">
               <h1><a href="/bulletins">公告列表</a></h1>
               <h1><a href="/accounts">作者列表</a></h1>
+              <h2><a href="https://github.com/oxogenesis/oxo-chat-server#deploy-with-ssl-nginx-pm2">自建/搭建本站教程</a></h2>
               <h2><a href="https://github.com/oxogenesis/oxo-chat-app/releases">App下载（on android推荐）</a></h2>
               <h2><a href="https://github.com/oxogenesis/oxo-chat-client/releases">Client下载（electron on windows不推荐）</a></h2>
               <h2>本站服务地址：${SelfURL}</h2>
@@ -660,104 +691,56 @@ http.createServer(function (request, response) {
             }
             quote = quote + '</ul><hr>'
           }
-          response.writeHeader(200, {
-            "Content-Type": "text/html"
-          });
+
           let pre_bulletin = ''
           if (item.pre_hash != 'F4C2EB8A3EBFC7B6D81676D79F928D0E') {
             pre_bulletin = `<h3><a href="/bulletin/${item.pre_hash}">上一篇</a></h3>`
           }
-          let next_bulletin = `<h3><a href="/bulletin_next/${item.hash}">下一篇</a></h3>`
-          response.write(`
-            <!DOCTYPE html>
-            <html>
-              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-              <head>
-                <title>oxo-chat-server</title>
-              </head>
-              <body bgcolor="#8FBC8F">
-                <h1><a href="/bulletins">公告列表</a></h1>
-                <h1>Bulletin#${hash}</h1>
-                <h3><a href="/account/${item.address}/bulletins">${item.address}</a>
-                <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
-                <h3> 发布@${timestamp_format(item.signed_at)}</h3>
-                ${pre_bulletin}${next_bulletin}
-                <hr>
-                ${quote}
-                <h3>${content}</h3>
-              </body>
-            </html>
-            `);
-          response.end();
-        }
-      }
-    })
-  } else if (bulletin_next_reg.test(path)) {
-    let hash = path.replace(/^\/bulletin_next\//, '')
-    let SQL = `SELECT * FROM BULLETINS WHERE pre_hash = "${hash}"`
-    DB.get(SQL, (err, item) => {
-      if (err) {
-        console.log(err)
-      } else {
-        if (item == null) {
-          response.writeHeader(200, {
-            "Content-Type": "text/html"
-          });
-          response.write(`
-            <!DOCTYPE html>
-            <html>
-              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-              <head>
-                <title>oxo-chat-server</title>
-              </head>
-              <body bgcolor="#8FBC8F">
-                <h1><a href="/bulletins">公告列表</a></h1>
-                <h1>Bulletin#${hash}</h1>
-                <h1>未被缓存...</h1>
-              </body>
-            </html>
-            `)
-          response.end();
-        } else {
-          let content = item.content.replace(/\n/g, '<br>')
-          let quote = ''
-          let quotes = JSON.parse(item.quote)
-          if (quotes.length != '') {
-            quote = '<h3>引用</h3><ul>'
-            for (let i = quotes.length - 1; i >= 0; i--) {
-              quote = quote + `<li><a href="/bulletin/${quotes[i].Hash}">${quotes[i].Address}#${quotes[i].Sequence}</a></li>`
+          let next_bulletin = ""
+          if (item.next_hash != null) {
+            next_bulletin = `<h3><a href="/bulletin/${item.next_hash}">下一篇</a></h3>`
+          }
+
+          SQL = `SELECT * FROM QUOTES WHERE main_hash = "${hash}" ORDER BY signed_at ASC`
+          DB.all(SQL, (err, is) => {
+            if (err) {
+              console.log(err)
+            } else {
+              let replys = ''
+              is.forEach(i => {
+                replys = replys + `<hr>
+                <h4><a href="/bulletin/${i.quote_hash}">Bulletin#${i.quote_hash}</a></h4>
+                <h4><a href="/account/${i.address}/bulletins">${i.address}</a>
+                <a href="/bulletin/${i.quote_hash}/json">#${i.sequence}</a></h4>
+                <h4> 发布@${timestamp_format(i.signed_at)}</h4>
+                <h4>${i.content}</h4>`
+              });
+              response.writeHeader(200, {
+                "Content-Type": "text/html"
+              });
+              response.write(`
+                <!DOCTYPE html>
+                <html>
+                  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                  <head>
+                    <title>oxo-chat-server</title>
+                  </head>
+                  <body bgcolor="#8FBC8F">
+                    <h1><a href="/bulletins">公告列表</a></h1>
+                    <h1>Bulletin#${hash}</h1>
+                    ${quote}
+                    <h3><a href="/account/${item.address}/bulletins">${item.address}</a>
+                    <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
+                    <h3> 发布@${timestamp_format(item.signed_at)}</h3>
+                    ${pre_bulletin}${next_bulletin}
+                    <h3>${content}</h3>
+                    ${replys}
+                  </body>
+                </html>
+                `);
+              response.end();
             }
-            quote = quote + '</ul><hr>'
-          }
-          response.writeHeader(200, {
-            "Content-Type": "text/html"
-          });
-          let pre_bulletin = ''
-          if (item.pre_hash != 'F4C2EB8A3EBFC7B6D81676D79F928D0E') {
-            pre_bulletin = `<h3><a href="/bulletin/${item.pre_hash}">上一篇</a></h3>`
-          }
-          let next_bulletin = `<h3><a href="/bulletin_next/${item.hash}">下一篇</a></h3>`
-          response.write(`
-            <!DOCTYPE html>
-            <html>
-              <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-              <head>
-                <title>oxo-chat-server</title>
-              </head>
-              <body bgcolor="#8FBC8F">
-                <h1><a href="/bulletins">公告列表</a></h1>
-                <h1>Bulletin#${hash}</h1>
-                <h3><a href="/account/${item.address}/bulletins">${item.address}</a>
-                <a href="/bulletin/${hash}/json">#${item.sequence}</a></h3>
-                <h3> 发布@${timestamp_format(item.signed_at)}</h3>
-                ${pre_bulletin}${next_bulletin}
-                <hr>
-                ${quote}
-                <h3>${content}</h3>
-              </body>
-            </html>
-            `);
-          response.end();
+          })
         }
       }
     })
@@ -894,3 +877,54 @@ http.createServer(function (request, response) {
   }
 })
   .listen(8000);
+
+
+// let SQL = `SELECT * FROM BULLETINS`
+// DB.all(SQL, (err, bulletins) => {
+//   if (err) {
+//     console.log(err)
+//   } else {
+//     bulletins.forEach(bulletin => {
+//       if (bulletin.next_hash == null) {
+//         // console.log(`${bulletin.hash}`)
+//         SQL = `SELECT * FROM BULLETINS WHERE pre_hash = "${bulletin.hash}"`
+//         DB.get(SQL, (err, b) => {
+//           if (err) {
+//             console.log(err)
+//           } else {
+//             if (b != null) {
+//               SQL = `UPDATE BULLETINS SET next_hash = '${b.hash}' WHERE hash = "${bulletin.hash}"`
+//               DB.run(SQL, (err) => {
+//                 if (err) {
+//                   console.log(err)
+//                 }
+//               })
+//             }
+//           }
+//         })
+//       }
+//     });
+//   }
+// })
+
+// let SQL = `SELECT * FROM BULLETINS`
+// DB.all(SQL, (err, bulletins) => {
+//   if (err) {
+//     console.log(err)
+//   } else {
+//     bulletins.forEach(bulletin => {
+//       if (bulletin.quote != '[]') {
+//         let quotes = JSON.parse(bulletin.quote)
+//         quotes.forEach(quote => {
+//           let SQL = `INSERT INTO QUOTES (main_hash, quote_hash, address, sequence, content, signed_at)
+//                     VALUES ('${quote.Hash}', '${bulletin.hash}', '${bulletin.address}', '${bulletin.sequence}', '${bulletin.content}', ${bulletin.signed_at})`
+//           DB.run(SQL, (err) => {
+//             if (err) {
+//               console.log(err)
+//             }
+//           })
+//         });
+//       }
+//     });
+//   }
+// })
