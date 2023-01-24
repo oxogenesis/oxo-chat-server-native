@@ -341,7 +341,7 @@ function CacheBulletin(bulletin) {
       })
 
       //update quote
-      bulletin.Quotes.forEach(quote => {
+      bulletin.Quote.forEach(quote => {
         SQL = `INSERT INTO QUOTES (main_hash, quote_hash, address, sequence, content, signed_at)
                VALUES ('${quote.Hash}', '${hash}', '${address}', '${bulletin.Sequence}', '${bulletin.Content}', ${bulletin.Timestamp})`
         DB.run(SQL, (err) => {
@@ -637,7 +637,8 @@ http.createServer(function (request, response) {
             <title>oxo-chat-server</title>
           </head>
           <body bgcolor="#8FBC8F">
-            <h1>公告列表</h1>
+            <h1><a href="/">首页</a></h1>
+            <h1><a href="/bulletins">公告列表</a></h1>
             <table border="1">
               <tr>
                 <th>作者</th>
@@ -673,6 +674,7 @@ http.createServer(function (request, response) {
                 <title>oxo-chat-server</title>
               </head>
               <body bgcolor="#8FBC8F">
+                <h1><a href="/">首页</a></h1>
                 <h1><a href="/bulletins">公告列表</a></h1>
                 <h1>Bulletin#${hash}</h1>
                 <h1>未被缓存...</h1>
@@ -726,6 +728,7 @@ http.createServer(function (request, response) {
                     <title>oxo-chat-server</title>
                   </head>
                   <body bgcolor="#8FBC8F">
+                    <h1><a href="/">首页</a></h1>
                     <h1><a href="/bulletins">公告列表</a></h1>
                     <h1>Bulletin#${hash}</h1>
                     ${quote}
@@ -817,7 +820,8 @@ http.createServer(function (request, response) {
             <title>oxo-chat-server</title>
           </head>
           <body bgcolor="#8FBC8F">
-            <h1>公告列表</h1>
+            <h1><a href="/">首页</a></h1>
+            <h1><a href="/bulletins">公告列表</a></h1>
             <table border="1">
               <tr>
                   <th>作者</th>
