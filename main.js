@@ -709,13 +709,13 @@ http.createServer(function (request, response) {
               console.log(err)
             } else {
               let replys = ''
+              let floor = 1
               is.forEach(i => {
                 replys = replys + `<hr>
-                <h4><a href="/bulletin/${i.quote_hash}">Bulletin#${i.quote_hash}</a></h4>
-                <h4><a href="/account/${i.address}/bulletins">${i.address}</a>
-                <a href="/bulletin/${i.quote_hash}/json">#${i.sequence}</a></h4>
-                <h4> 发布@${timestamp_format(i.signed_at)}</h4>
+                <h4>#${floor} 发布@${timestamp_format(i.signed_at)}</h4>
+                <h4><a href="/bulletin/${i.quote_hash}">${i.address}#${i.sequence}</a></h4>
                 <h4>${i.content}</h4>`
+                floor = floor + 1
               });
               response.writeHeader(200, {
                 "Content-Type": "text/html"
@@ -883,7 +883,7 @@ http.createServer(function (request, response) {
   .listen(8000);
 
 
-// let SQL = `SELECT * FROM BULLETINS`
+// SQL = `SELECT * FROM BULLETINS`
 // DB.all(SQL, (err, bulletins) => {
 //   if (err) {
 //     console.log(err)
@@ -911,7 +911,7 @@ http.createServer(function (request, response) {
 //   }
 // })
 
-// let SQL = `SELECT * FROM BULLETINS`
+// SQL = `SELECT * FROM BULLETINS`
 // DB.all(SQL, (err, bulletins) => {
 //   if (err) {
 //     console.log(err)
@@ -920,8 +920,8 @@ http.createServer(function (request, response) {
 //       if (bulletin.quote != '[]') {
 //         let quotes = JSON.parse(bulletin.quote)
 //         quotes.forEach(quote => {
-//           let SQL = `INSERT INTO QUOTES (main_hash, quote_hash, address, sequence, content, signed_at)
-//                     VALUES ('${quote.Hash}', '${bulletin.hash}', '${bulletin.address}', '${bulletin.sequence}', '${bulletin.content}', ${bulletin.signed_at})`
+//           SQL = `INSERT INTO QUOTES (main_hash, quote_hash, address, sequence, content, signed_at)
+//                 VALUES ('${quote.Hash}', '${bulletin.hash}', '${bulletin.address}', '${bulletin.sequence}', '${bulletin.content}', ${bulletin.signed_at})`
 //           DB.run(SQL, (err) => {
 //             if (err) {
 //               console.log(err)
