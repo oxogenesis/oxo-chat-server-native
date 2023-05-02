@@ -752,7 +752,7 @@ http.createServer(function (request, response) {
     for (let i = 0; i < BulletinAccounts.length; i++) {
       trs = trs +
         `<tr>
-        <td><li><a href="/account/${BulletinAccounts[i].address}/bulletins"><code>${BulletinAccounts[i].address}</code></a></td>
+        <td><a href="/account/${BulletinAccounts[i].address}/bulletins">${BulletinAccounts[i].address}</a></td>
         <td>${BulletinAccounts[i].sequence}</td>
       </tr>`
     }
@@ -767,7 +767,8 @@ http.createServer(function (request, response) {
         <title>oxo-chat-server</title>
       </head>
       <body bgcolor="#8FBC8F">
-        <h1>作者列表</h1>
+        <h1><a href="/">首页</a></h1>
+        <h1><a href="/accounts">作者列表</a></h1>
         <table border="1">
           <tr>
             <th>作者</th>
@@ -821,7 +822,7 @@ http.createServer(function (request, response) {
           </head>
           <body bgcolor="#8FBC8F">
             <h1><a href="/">首页</a></h1>
-            <h1><a href="/bulletins">公告列表</a></h1>
+            <h1><a href="/accounts">作者列表</a></h1>
             <table border="1">
               <tr>
                   <th>作者</th>
@@ -881,54 +882,3 @@ http.createServer(function (request, response) {
   }
 })
   .listen(8000);
-
-
-// SQL = `SELECT * FROM BULLETINS`
-// DB.all(SQL, (err, bulletins) => {
-//   if (err) {
-//     console.log(err)
-//   } else {
-//     bulletins.forEach(bulletin => {
-//       if (bulletin.next_hash == null) {
-//         // console.log(`${bulletin.hash}`)
-//         SQL = `SELECT * FROM BULLETINS WHERE pre_hash = "${bulletin.hash}"`
-//         DB.get(SQL, (err, b) => {
-//           if (err) {
-//             console.log(err)
-//           } else {
-//             if (b != null) {
-//               SQL = `UPDATE BULLETINS SET next_hash = '${b.hash}' WHERE hash = "${bulletin.hash}"`
-//               DB.run(SQL, (err) => {
-//                 if (err) {
-//                   console.log(err)
-//                 }
-//               })
-//             }
-//           }
-//         })
-//       }
-//     });
-//   }
-// })
-
-// SQL = `SELECT * FROM BULLETINS`
-// DB.all(SQL, (err, bulletins) => {
-//   if (err) {
-//     console.log(err)
-//   } else {
-//     bulletins.forEach(bulletin => {
-//       if (bulletin.quote != '[]') {
-//         let quotes = JSON.parse(bulletin.quote)
-//         quotes.forEach(quote => {
-//           SQL = `INSERT INTO QUOTES (main_hash, quote_hash, address, sequence, content, signed_at)
-//                 VALUES ('${quote.Hash}', '${bulletin.hash}', '${bulletin.address}', '${bulletin.sequence}', '${bulletin.content}', ${bulletin.signed_at})`
-//           DB.run(SQL, (err) => {
-//             if (err) {
-//               console.log(err)
-//             }
-//           })
-//         });
-//       }
-//     });
-//   }
-// })
