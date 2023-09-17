@@ -18,6 +18,9 @@ oxo消息服务器
 # run code
 $ npm install  
 $ node main.js  
+$ nvm list  
+  * 14.17.6 (Currently using 64-bit executable)  
+    12.19.0  
 
 # deploy with ssl, nginx, pm2
 sudo apt install nginx  
