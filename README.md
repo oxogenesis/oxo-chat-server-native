@@ -15,12 +15,14 @@ oxo消息服务器
 **[3.业务消息](https://github.com/oxogenesis/oxo-chat-client/wiki/3.%E4%B8%9A%E5%8A%A1%E6%B6%88%E6%81%AF)**  
 **[4.数据存储](https://github.com/oxogenesis/oxo-chat-client/wiki/4.%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8)**  
 
+# node version
+$ nvm list  
+  * 14.17.6 (Currently using 64-bit executable)  
+    12.19.0
+
 # run code
 $ npm install  
 $ node main.js  
-$ nvm list  
-  * 14.17.6 (Currently using 64-bit executable)  
-    12.19.0  
 
 # deploy with ssl, nginx, pm2
 sudo apt install nginx  
