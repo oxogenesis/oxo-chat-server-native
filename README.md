@@ -5,6 +5,7 @@ oxo消息服务器
 * 简单的网站功能（在线账户列表、公告展示）
 
 # code
+**[app](https://github.com/oxogenesis/oxo-chat-app)**  
 **[client](https://github.com/oxogenesis/oxo-chat-client)**  
 **[router](https://github.com/oxogenesis/oxo-chat-router)**  
 **[server](https://github.com/oxogenesis/oxo-chat-server)**  
